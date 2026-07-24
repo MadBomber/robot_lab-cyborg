@@ -1,6 +1,36 @@
 module RobotLab
-  module Cyborg
+  class Cyborg
     VERSION: String
-    # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+    attr_reader name: String
+    attr_reader bus: untyped
+    attr_reader outbox: Hash[untyped, untyped]
+    attr_reader interviewer: Cyborg::Interviewer
+    attr_reader memory: untyped
+
+    def initialize: (name: String, ?bus: untyped, ?interviewer: Cyborg::Interviewer?, ?input: untyped, ?output: untyped, ?auto_reply: bool, ?memory: untyped) -> void
+    def call: (untyped result) -> untyped
+    def run: (?String? message, ?network_memory: untyped, ?memory: untyped, **untyped) -> untyped
+    def ask: (String question, ?choices: Array[String]?, ?default: String?) -> String
+    def on_task: () { (untyped, String) -> void } -> self
+    def assign: (to: (String | Symbol), task: untyped) -> untyped
+    def delegate: (to: untyped, task: String, ?async: bool, **untyped) -> untyped
+    def remember: (untyped key, untyped value) -> untyped
+    def recall: (untyped key, ?wait: untyped) -> untyped
+    def inbox: () -> Array[untyped]
+    def to_h: () -> Hash[Symbol, untyped]
+
+    class Interviewer
+      def ask: (String question, ?choices: Array[String]?, ?default: String?) -> String
+
+      class Terminal < Interviewer
+        def initialize: (?input: untyped, ?output: untyped, ?name: String) -> void
+      end
+
+      class Scripted < Interviewer
+        attr_reader asked: Array[String]
+        def initialize: (?(Array[String] | String) answers) -> void
+      end
+    end
   end
 end

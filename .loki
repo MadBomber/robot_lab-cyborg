@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+# robot_lab-cyborg — human-in-the-network peer worker for RobotLab.
+
+import_up "repo_dev.loki"
+
+class Tasks
+  @@gem_name ||= "robot_lab-cyborg".freeze
+
+  header "robot_lab-cyborg v#{gem_version} — human peer worker"
+end

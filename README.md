@@ -90,15 +90,17 @@ oncall   = RobotLab::Cyborg.new(name: "oncall", ask_timeout: 30)   # nil answer 
 Runnable demos in [`examples/`](examples):
 
 - `01_human_in_the_network.rb` — a scripted human as a pipeline step, peers messaging over a bus, and shared memory (network → human). Key-free.
-- `02_terminal_mentions.rb` — a **live** human on the terminal channel who addresses peers by mention: type `@name your message` and it is routed to that peer over the bus, whose reply comes back to your terminal (human → network). Addresses a real **LLM robot** (`@assistant`, a RobotLab robot on a local Ollama model) alongside key-free canned peers — you address all of them the same way.
+- `02_terminal_mentions.rb` — a **live** human on the terminal channel who addresses peers by mention: type `@name your message` and it is routed to that peer over the bus, whose reply comes back to your terminal (human → network). Addresses a real **LLM robot** (`@assistant`, a RobotLab robot on a local Ollama model) alongside key-free canned peers — you address all of them the same way. A message with no mention broadcasts to every peer.
+- `03_robot_interviews_cyborg.rb` — the Interviewer the *other* way round: an **LLM robot** (Ollama) interviews the human, one adaptive question at a time. Each question is `delegate`d to the Cyborg, whose Interviewer conducts it on the terminal and hands the answer back; the robot then builds a categorized profile of the human. Answer, `skip`, or `done`.
 
 ```bash
 ruby examples/01_human_in_the_network.rb
 
-# Example 2 needs a running Ollama with the model pulled (ollama pull qwen3.6);
-# override with OLLAMA_MODEL / OLLAMA_API_BASE. The canned peers still work
-# without it — only @assistant requires Ollama.
-ruby examples/02_terminal_mentions.rb   # then type: @assistant write a haiku about deployment
+# Examples 2 and 3 need a running Ollama with the model pulled (ollama pull
+# qwen3.6); override with OLLAMA_MODEL / OLLAMA_API_BASE. In example 2 the canned
+# peers still work without it — only @assistant requires Ollama.
+ruby examples/02_terminal_mentions.rb        # then type: @assistant write a haiku about deployment
+ruby examples/03_robot_interviews_cyborg.rb  # the robot asks you the questions
 ```
 
 ## Development

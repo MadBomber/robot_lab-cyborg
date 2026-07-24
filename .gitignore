@@ -6,3 +6,10 @@
 /pkg/
 /spec/reports/
 /tmp/
+
+# Bundler lock (this is a library gem)
+/Gemfile.lock
+
+# quality-gate artifacts (baseline + last run output)
+/.quality/
+*_output.txt

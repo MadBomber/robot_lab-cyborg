@@ -33,7 +33,9 @@ module RobotLab
 
       message = alice.assign(to: :bob, task: "FYI: window at 15:00")
 
-      wait_until { bob.inbox.size == 1 }
+      # The inbound task is answered off the poller thread now, so wait for the
+      # human to have been asked rather than merely for delivery.
+      wait_until { bob.channel.asked.any? }
       # bob's human saw it, but no reply was sent back to alice
       assert_includes bob.channel.asked.first, "window at 15:00"
       sleep 0.05

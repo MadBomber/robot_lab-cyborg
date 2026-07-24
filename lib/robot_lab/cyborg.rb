@@ -84,14 +84,17 @@ module RobotLab
       @bus_subscriber_id = nil
       @message_counter   = 0
       @outbox            = {}
+      @bus_mutex         = Mutex.new
       @message_handler   = method(:handle_incoming)
 
       @auto_reply    = auto_reply
       @ask_timeout   = ask_timeout
+      @presence      = :online
       @on_task       = nil
       @on_human      = nil
       @inbox         = []
       @inbox_mutex   = Mutex.new
+      @state_mutex   = Mutex.new
       @shared_memory = nil
       @memory        = memory || Memory.new
       @channel       = channel || Channel::Terminal.new(name: @name)
@@ -135,7 +138,7 @@ module RobotLab
     # @return [RobotResult]
     def run(message = nil, network_memory: nil, memory: nil, **_kwargs)
       active = memory || network_memory || @memory
-      @shared_memory = network_memory if network_memory
+      attach_memory(network_memory) if network_memory
 
       answer = with_writer(active) { ask(message.to_s) }
       build_result(answer)
@@ -152,9 +155,36 @@ module RobotLab
     # @param choices [Array<String>, nil]
     # @param default [String, nil]
     # @param timeout [Numeric, nil] seconds to wait (default: this peer's ask_timeout)
-    # @return [String, nil] the human's answer
-    def ask(question, choices: nil, default: nil, timeout: @ask_timeout)
-      @interviewer.ask_and_wait(question, choices: choices, default: default, timeout: timeout)
+    # @param validate [#call, nil] a validator: return a coerced value when the
+    #   answer is acceptable, or nil to reject and re-ask
+    # @param retries [Integer] extra attempts allowed when validation rejects
+    # @return [Object, nil] the human's answer (coerced when validated)
+    def ask(question, choices: nil, default: nil, timeout: @ask_timeout, validate: nil, retries: 2)
+      attempt = 0
+      loop do
+        answer = @interviewer.ask_and_wait(question, choices: choices, default: default, timeout: timeout)
+        return answer if validate.nil? || answer.nil?
+
+        value = validate.call(answer)
+        return value unless value.nil?
+
+        attempt += 1
+        return default if attempt > retries
+
+        tell(%(Sorry, I couldn't use "#{answer}". Please try again.))
+      end
+    end
+
+    # Ask for an integer, re-asking until the human gives a parseable number.
+    # @return [Integer, nil]
+    def ask_int(question, **)
+      ask(question, validate: ->(a) { Integer(a.to_s.strip, exception: false) }, **)
+    end
+
+    # Ask a yes/no question, returning true/false (nil if never answered).
+    # @return [Boolean, nil]
+    def ask_confirm(question, **)
+      ask(question, choices: %w[yes no], validate: method(:parse_bool), **)
     end
 
     # Ask this peer's human a question without blocking, returning the pending
@@ -178,14 +208,89 @@ module RobotLab
     end
 
     # Register a callback fired when the human sends something unprompted — a
-    # message over the channel that answers no outstanding question. Routing such
-    # initiative onto the bus as peer tasking is future work; for now it is
-    # surfaced here.
+    # message over the channel that answers no outstanding question. This is the
+    # human-initiates-into-the-network path; a {Conversation} turns these into
+    # addressed bus messages, or handle them yourself here.
     #
     # @yield [ChannelMessage] the unsolicited human message
     # @return [self]
     def on_human(&block)
       @on_human = block
+      self
+    end
+
+    # Say something to the human over the channel (network -> human), unprompted —
+    # the output half of the duplex. Use this to surface notices, or let a
+    # {Conversation} route peer replies here automatically.
+    #
+    # @param text [String]
+    # @param kind [Symbol] :notice | :message | :question
+    # @return [self]
+    def tell(text, kind: :notice)
+      @channel.deliver(ChannelMessage.new(content: text.to_s, kind: kind))
+      self
+    end
+
+    # Start an interactive {Conversation}: the human addresses peers by @mention
+    # (no mention broadcasts to all), replies come back on the channel. Returns
+    # the started Conversation.
+    #
+    # @param peers [Array<String, Symbol>] addressable member names
+    # @return [Conversation]
+    def converse(peers: [])
+      Conversation.new(cyborg: self, peers: peers).start
+    end
+
+    # Start always-on listening: keep reading the channel even when no question is
+    # outstanding, so the human can speak to the network unprompted at any time.
+    # Their input arrives via {#on_human}. Idempotent.
+    #
+    # @return [self]
+    def listen
+      @interviewer.listen
+      self
+    end
+
+    # Stop always-on listening.
+    # @return [self]
+    def unlisten
+      @interviewer.unlisten
+      self
+    end
+
+    # --- Presence / availability ---------------------------------------------
+
+    # @return [Symbol] :online, :away, or :offline
+    attr_reader :presence
+
+    # Whether this human peer will take work now. The network can check this
+    # before delegating and route around or escalate for an absent human.
+    #
+    # @return [Boolean]
+    def available?
+      @state_mutex.synchronize { @presence != :offline }
+    end
+
+    # Mark the human present and taking work.
+    # @return [self]
+    def online!
+      @state_mutex.synchronize { @presence = :online }
+      self
+    end
+
+    # Mark the human present but slow to respond (still asked; caller should use a
+    # generous timeout).
+    # @return [self]
+    def away!
+      @state_mutex.synchronize { @presence = :away }
+      self
+    end
+
+    # Mark the human unavailable. Inbound bus tasks are declined immediately
+    # instead of waiting on a human who isn't there.
+    # @return [self]
+    def offline!
+      @state_mutex.synchronize { @presence = :offline }
       self
     end
 
@@ -252,6 +357,25 @@ module RobotLab
       current_memory.get(key, wait: wait)
     end
 
+    # Attach this peer to a shared memory — what {#remember}/{#recall} target. A
+    # network run attaches automatically; call {#detach_memory} to return to this
+    # peer's own standalone memory (so it doesn't keep writing to a finished
+    # network's memory).
+    #
+    # @param mem [RobotLab::Memory]
+    # @return [self]
+    def attach_memory(mem)
+      @state_mutex.synchronize { @shared_memory = mem }
+      self
+    end
+
+    # Detach from any shared memory, returning to standalone memory.
+    # @return [self]
+    def detach_memory
+      @state_mutex.synchronize { @shared_memory = nil }
+      self
+    end
+
     # --- Inspection -----------------------------------------------------------
 
     # Inbound bus messages this peer has received, oldest first.
@@ -278,7 +402,7 @@ module RobotLab
     end
 
     def current_memory
-      @shared_memory || @memory
+      @state_mutex.synchronize { @shared_memory } || @memory
     end
 
     # Run the block with +memory+'s current writer set to this peer, restoring it
@@ -293,17 +417,42 @@ module RobotLab
       memory.current_writer = previous if memory.respond_to?(:current_writer=)
     end
 
-    # Route an inbound bus delivery. Arity-1 handler => the poller auto-acks.
-    # Replies are already correlated into @outbox by the mixin before we run;
-    # a fresh (non-reply) message is a task, so we surface it to the human and
-    # (optionally) reply with their answer.
+    # Route an inbound bus delivery (runs on the bus poller drain thread; arity-1
+    # handler => the poller auto-acks). A reply is shown to the human as a peer
+    # message. A fresh task is surfaced to the human *and answered off this thread*
+    # (see {#respond_to_task}) so a slow or absent human never blocks bus intake.
     def handle_incoming(message)
       @inbox_mutex.synchronize { @inbox << message }
+      deliver_to_human(message, kind: :message) if message.reply?
       return if message.reply?
 
-      answer = ask(task_prompt(message))
-      send_reply(to: message.from, content: answer, in_reply_to: message.key) if @auto_reply && @bus && answer
-      @on_task&.call(message, answer)
+      respond_to_task(message)
+    end
+
+    # Answer an inbound task on its own thread. The poller returns immediately;
+    # the human's answer (bounded by ask_timeout) is replied when it arrives. An
+    # offline human declines right away rather than leaving the sender hanging.
+    def respond_to_task(message)
+      unless available?
+        send_reply(to: message.from, content: "(#{@name} is unavailable)", in_reply_to: message.key) if @auto_reply && @bus
+        return
+      end
+
+      Thread.new do
+        answer = ask(task_prompt(message))
+        send_reply(to: message.from, content: answer, in_reply_to: message.key) if @auto_reply && @bus && answer
+        @on_task&.call(message, answer)
+      rescue StandardError => e
+        warn "[Cyborg #{@name}] inbound task failed: #{e.class}: #{e.message}"
+      end
+    end
+
+    # Show an inbound network message to the human over the channel (the output
+    # half of the duplex). Best-effort — a channel error must not break intake.
+    def deliver_to_human(message, kind:)
+      @channel.deliver(ChannelMessage.new(content: message_body(message), sender: message.from, kind: kind))
+    rescue StandardError
+      nil
     end
 
     # An inbound channel message that answered no outstanding question: the human
@@ -313,9 +462,20 @@ module RobotLab
     end
 
     def task_prompt(message)
+      "#{message.from} asks: #{message_body(message)}"
+    end
+
+    def message_body(message)
       content = message.content
-      body = content.is_a?(Hash) ? content.map { |k, v| "#{k}: #{v}" }.join("\n") : content.to_s
-      "#{message.from} asks: #{body}"
+      content.is_a?(Hash) ? content.map { |k, v| "#{k}: #{v}" }.join("\n") : content.to_s
+    end
+
+    # Interpret a yes/no answer as a boolean, or nil when it is neither.
+    def parse_bool(answer)
+      case answer.to_s.strip.downcase
+      when "y", "yes", "true", "1"  then true
+      when "n", "no", "false", "0"  then false
+      end
     end
 
     # Build a RobotResult from the human's text, shaped exactly like a robot's
@@ -346,5 +506,6 @@ module RobotLab
 end
 
 require_relative "cyborg/interviewer"
+require_relative "cyborg/conversation"
 
 RobotLab.register_extension(:cyborg, RobotLab::Cyborg) if RobotLab.respond_to?(:register_extension)

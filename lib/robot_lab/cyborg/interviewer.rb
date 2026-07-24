@@ -15,27 +15,37 @@ module RobotLab
     # on, with a timeout, whenever you are ready. A background consumer drains the
     # channel and resolves questions as their answers arrive.
     #
-    # Correlation: when an inbound message carries an +in_reply_to+ (a rich
-    # transport like Slack threads its replies) it resolves exactly that
-    # question; otherwise the oldest outstanding question is assumed (FIFO), which
-    # is the best a bare terminal can do.
+    # Correlation:
+    # - On a channel that {Channel#correlates?} (Slack threads, email), any number
+    #   of questions may be outstanding; each inbound answer names the question it
+    #   replies to via +in_reply_to+.
+    # - On a dumb channel (a bare terminal) answers carry no correlation, so the
+    #   Interviewer serializes: only ONE question is on the wire at a time, and an
+    #   answer resolves that active question. Extra asks queue and are delivered as
+    #   the active one resolves or expires. This makes mis-attribution impossible.
     class Interviewer
       # How often the background consumer wakes to poll the channel.
       POLL_INTERVAL = 0.05
 
+      # @return [StandardError, nil] last error a handler/channel raised in the consumer
+      attr_reader :last_error
+
       # @param channel [Channel] the injected means of reaching the human
-      # @param default_timeout [Numeric, nil] default seconds {#ask_and_wait}
-      #   waits before giving up on an answer
+      # @param default_timeout [Numeric, nil] default seconds {#ask_and_wait} waits
       def initialize(channel:, default_timeout: nil)
         @channel         = channel
         @default_timeout = default_timeout
         @outstanding     = {}
+        @pending         = []   # registered-but-not-yet-delivered (serialized channels)
+        @active_id       = nil  # the one delivered question awaiting an answer (serialized)
         @counter         = 0
         @mutex           = Mutex.new
         @on_initiative   = nil
         @consumer        = nil
         @running         = false
         @closing         = false
+        @listening       = false
+        @last_error      = nil
       end
 
       # Ask the human a question, asynchronously.
@@ -46,7 +56,12 @@ module RobotLab
       # @return [Question] a handle whose {Question#answer} waits for the reply
       def ask(content, choices: nil, default: nil)
         question = register(content, choices, default)
-        @channel.deliver(ChannelMessage.new(id: question.id, content: render(question)))
+        if @channel.correlates?
+          @channel.deliver(question_message(question))
+        else
+          @mutex.synchronize { @pending << question }
+          pump_pending
+        end
         ensure_consumer
         question
       end
@@ -63,13 +78,31 @@ module RobotLab
       end
 
       # Register a handler for inbound messages that answer no outstanding
-      # question — the human acting as a peer (raising something unprompted)
-      # rather than replying.
+      # question — the human acting as a peer (raising something unprompted).
       #
       # @yield [ChannelMessage] the unsolicited message
       # @return [self]
       def on_initiative(&block)
         @on_initiative = block
+        self
+      end
+
+      # Keep the consumer alive even with no questions outstanding, so unsolicited
+      # human input is captured as initiative (human -> network). Idempotent.
+      #
+      # @return [self]
+      def listen
+        @mutex.synchronize { @listening = true }
+        ensure_consumer
+        self
+      end
+
+      # Stop always-on listening. The consumer winds down once nothing is
+      # outstanding. Does not close the channel.
+      #
+      # @return [self]
+      def unlisten
+        @mutex.synchronize { @listening = false }
         self
       end
 
@@ -82,13 +115,15 @@ module RobotLab
         @consumer = nil
       end
 
-      # Remove a question from the outstanding set so a later, unrelated answer
-      # cannot claim it. Called by {Question#answer} on timeout.
+      # Remove a question from the outstanding set (so a later, unrelated answer
+      # cannot claim it) and advance the serialized queue. Called by
+      # {Question#answer} on timeout.
       #
       # @param question [Question]
       # @return [void]
       def expire(question)
         @mutex.synchronize { @outstanding.delete(question.id) }
+        release_active(question.id)
       end
 
       private
@@ -102,11 +137,40 @@ module RobotLab
         end
       end
 
+      def question_message(question)
+        ChannelMessage.new(id: question.id, content: render(question), kind: :question)
+      end
+
+      # Deliver the next queued question if nothing is currently on the wire.
+      # (Serialized/non-correlating channels only.)
+      def pump_pending
+        question = @mutex.synchronize do
+          next nil if @active_id || @pending.empty?
+
+          nxt = @pending.shift
+          @active_id = nxt.id
+          nxt
+        end
+        @channel.deliver(question_message(question)) if question
+      end
+
+      # If +id+ was the active question, clear it and deliver the next queued one.
+      def release_active(id)
+        advanced = @mutex.synchronize do
+          next false unless @active_id == id
+
+          @active_id = nil
+          true
+        end
+        pump_pending if advanced
+      end
+
       # Lazily start the single consumer thread. It runs only while questions are
-      # outstanding, so it stops on its own once every ask has been answered or
-      # has timed out; the next {#ask} restarts it. (An always-on loop for idle,
-      # unprompted human input is future work.) Starting and stopping both flip
-      # +@running+ under the mutex, so a restart never races a shutdown.
+      # outstanding, so it stops on its own once every ask has been answered or has
+      # timed out; the next {#ask} restarts it. (For always-on listening — capturing
+      # idle human initiative — a Cyborg keeps a question-free consumer alive; see
+      # Cyborg#listen.) Both start and stop flip +@running+ under the mutex, so a
+      # restart never races a shutdown.
       def ensure_consumer
         @mutex.synchronize do
           return if @running
@@ -116,25 +180,33 @@ module RobotLab
         end
       end
 
+      # Drain the channel until there is nothing to serve. A handler or channel
+      # error must never kill the consumer (that would wedge every future ask), so
+      # errors are caught, recorded, and the loop continues. The +ensure+ resets
+      # +@running+ on any exit so {#ensure_consumer} can always restart.
       def consume
         until stop?
-          message = @channel.receive(timeout: POLL_INTERVAL)
-          message ? dispatch(message) : sleep(POLL_INTERVAL)
+          begin
+            message = @channel.receive(timeout: POLL_INTERVAL)
+            message ? dispatch(message) : sleep(POLL_INTERVAL)
+          rescue ClosedQueueError
+            break
+          rescue StandardError => e
+            @last_error = e
+          end
         end
-      rescue ClosedQueueError
+      ensure
         @mutex.synchronize { @running = false }
       end
 
-      # Decide, atomically, whether the consumer should stop: when closing or
-      # when nothing is outstanding. Flipping +@running+ here (under the same lock
-      # {#ensure_consumer} uses) closes the window where a fresh ask could think a
-      # consumer is still alive while this one is exiting.
+      # Decide, atomically, whether the consumer should stop: when closing, or when
+      # nothing is outstanding and it is not in always-on listen mode.
       def stop?
         @mutex.synchronize do
-          next false unless @closing || @outstanding.empty?
+          next true if @closing
+          next false if @listening
 
-          @running = false
-          true
+          @outstanding.empty?.tap { |idle| @running = false if idle }
         end
       end
 
@@ -143,30 +215,31 @@ module RobotLab
         question = claim(message)
         if question
           question.resolve(interpret(message.content, question))
+          release_active(question.id)
         else
           @on_initiative&.call(message)
         end
       end
 
       # The outstanding question this message answers: an explicit +in_reply_to+
-      # when the channel provides one, otherwise the oldest outstanding question.
-      # A correlated id that names no outstanding question matches nothing (the
-      # message becomes initiative).
+      # when the channel provides one, otherwise the single active (serialized)
+      # question. A correlated id naming no outstanding question, or an answer with
+      # no active question, matches nothing (the message becomes initiative).
       def claim(message)
         reply_to = message.in_reply_to
         @mutex.synchronize do
-          id = if reply_to.nil?
-                 @outstanding.keys.min
-               elsif @outstanding.key?(reply_to)
+          id = if reply_to && @outstanding.key?(reply_to)
                  reply_to
+               elsif reply_to.nil? && @active_id && @outstanding.key?(@active_id)
+                 @active_id
                end
           id ? @outstanding.delete(id) : nil
         end
       end
 
-      # Turn a raw human reply into an answer: fall back to the default on an
-      # empty reply, and map a bare number to its choice. Always returns a String
-      # so a genuine empty answer is never confused with a timeout (which is nil).
+      # Turn a raw human reply into an answer: fall back to the default on an empty
+      # reply, and map a bare number to its choice. Always returns a String so a
+      # genuine empty answer is never confused with a timeout (which is nil).
       def interpret(text, question)
         default = question.default
         text = default if empty_answer?(text) && !default.nil?

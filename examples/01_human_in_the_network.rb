@@ -10,6 +10,10 @@
 #
 #   ruby examples/01_human_in_the_network.rb
 
+# Prefer the local robot_lab checkout (with the latest fixes) over any installed gem.
+core_lib = File.expand_path("../../robot_lab/lib", __dir__)
+$LOAD_PATH.unshift(core_lib) if File.directory?(core_lib)
+
 require "robot_lab"
 require_relative "../lib/robot_lab/cyborg"
 

@@ -20,12 +20,15 @@
 #   ruby examples/03_robot_interviews_cyborg.rb
 
 require "logger"
+# Prefer the local robot_lab checkout (with the latest fixes) over any installed gem.
+core_lib = File.expand_path("../../robot_lab/lib", __dir__)
+$LOAD_PATH.unshift(core_lib) if File.directory?(core_lib)
+
 require "robot_lab"
 require_relative "../lib/robot_lab/cyborg"
 
-Cyborg         = RobotLab::Cyborg
-Channel        = RobotLab::Cyborg::Channel
-ChannelMessage = RobotLab::Cyborg::ChannelMessage
+Cyborg  = RobotLab::Cyborg
+Channel = RobotLab::Cyborg::Channel
 
 OLLAMA_API_BASE = ENV.fetch("OLLAMA_API_BASE", "http://localhost:11434/v1")
 OLLAMA_MODEL    = ENV.fetch("OLLAMA_MODEL", "qwen3.6")
@@ -63,12 +66,7 @@ robot = RobotLab.build(
 
 # The human peer. Its terminal shows each question under a "[ProfileBot]" label,
 # since in this demo everything the human hears comes from the robot.
-you = Cyborg.new(name: "you", channel: Channel::Terminal.new(name: "ProfileBot"))
-
-# Show a line to the human — the channel's output direction (network -> human).
-def tell(human, text)
-  human.channel.deliver(ChannelMessage.new(content: text))
-end
+you = Cyborg.new(name: "you", channel: Channel::Terminal.new(name: "ProfileBot"), ask_timeout: 300)
 
 # Ask the human one question by delegating it to the Cyborg. The Cyborg's
 # Interviewer delivers it over the terminal channel and returns the answer.
@@ -76,7 +74,18 @@ def interview_turn(robot, human, question)
   robot.delegate(to: human, task: question).reply.to_s.strip
 end
 
-tell(you, "Hi! I'd like to ask you a few questions. Answer freely, say \"skip\" to pass, or \"done\" to finish.")
+you.tell("Hi! I'd like to ask you a few questions.")
+
+# A short *typed* intake first — the Cyborg validates and re-asks on bad input.
+unless you.ask_confirm("Ready to begin?")
+  you.tell("No problem — maybe another time.")
+  exit
+end
+years = you.ask_int("Roughly how many years have you worked in your field?")
+you.tell("Thanks. Answer freely from here, say \"skip\" to pass, or \"done\" to finish.")
+
+# Seed the robot with the structured intake so it shows up in the profile.
+robot.run(%(Context: they have about #{years || "an unstated number of"} years of experience. Acknowledge in one word.))
 
 question       = robot.run("Ask your first question.").reply.to_s.strip
 answers_given  = 0
@@ -113,4 +122,4 @@ profile = robot.run(<<~PROMPT).reply.to_s.strip
   End with a one-sentence overall summary.
 PROMPT
 
-tell(you, "Here is the profile I built from what you shared:\n\n#{profile}")
+you.tell("Here is the profile I built from what you shared:\n\n#{profile}")

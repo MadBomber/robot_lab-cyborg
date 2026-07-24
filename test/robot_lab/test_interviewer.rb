@@ -145,5 +145,68 @@ module RobotLab
       wait_until { seen.any? }
       assert_equal ["unprompted status update"], seen
     end
+
+    # --- robustness: a throwing handler must not wedge the interviewer (A1) ----
+
+    def test_a_throwing_initiative_handler_does_not_kill_the_consumer
+      probe = Probe.new
+      @interviewer = Interviewer.new(channel: probe).on_initiative { |_m| raise "handler boom" }
+      question = @interviewer.ask("still alive?")
+
+      probe.push("noise", in_reply_to: 999) # -> initiative -> raises inside consumer
+      probe.push("the real answer", in_reply_to: question.id)
+
+      assert_equal "the real answer", question.answer(timeout: 2)
+      assert_kind_of RuntimeError, @interviewer.last_error
+    end
+
+    def test_a_new_ask_still_works_after_a_handler_error
+      probe = Probe.new
+      @interviewer = Interviewer.new(channel: probe).on_initiative { |_m| raise "boom" }
+      q1 = @interviewer.ask("one")
+      probe.push("boom", in_reply_to: 999)
+      probe.push("a1", in_reply_to: q1.id)
+      assert_equal "a1", q1.answer(timeout: 2)
+
+      q2 = @interviewer.ask("two")
+      probe.push("a2", in_reply_to: q2.id)
+      assert_equal "a2", q2.answer(timeout: 2), "interviewer wedged after a handler error"
+    end
+
+    # --- serialization on a non-correlating channel (B6, fixes A3) ------------
+
+    def test_only_one_question_is_on_the_wire_at_a_time
+      probe = Probe.new # correlates? == false
+      @interviewer = Interviewer.new(channel: probe)
+      q1 = @interviewer.ask("first")
+      q2 = @interviewer.ask("second")
+
+      assert_equal ["first"], probe.delivered.map(&:content), "second question delivered too early"
+
+      probe.push("answer one") # no correlation -> resolves the active question
+      assert_equal "answer one", q1.answer(timeout: 2)
+
+      wait_until { probe.delivered.size == 2 }
+      assert_equal "second", probe.delivered.last.content
+      probe.push("answer two")
+      assert_equal "answer two", q2.answer(timeout: 2)
+    end
+
+    def test_a_correlating_channel_allows_concurrent_questions
+      @interviewer = Interviewer.new(channel: Scripted.new(%w[a b]))
+      # Scripted correlates, so both questions are delivered immediately.
+      one = @interviewer.ask("q1")
+      two = @interviewer.ask("q2")
+      assert_equal "a", one.answer(timeout: 2)
+      assert_equal "b", two.answer(timeout: 2)
+    end
+
+    # --- timeout on an interruptible terminal (A4) ---------------------------
+
+    def test_timeout_returns_default_on_a_silent_terminal
+      channel = Terminal.new(input: StringIO.new(""), output: StringIO.new)
+      @interviewer = Interviewer.new(channel: channel)
+      assert_equal "abstain", @interviewer.ask_and_wait("Vote?", default: "abstain", timeout: 0.2)
+    end
   end
 end

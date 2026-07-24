@@ -77,6 +77,8 @@ Built-in channels:
 - `Channel::Scripted` — canned answers in order, with exact correlation (tests, automation, replay).
 - `Channel` — the abstract base; subclass it (implement `deliver`/`receive`) to bridge to Slack, email, a web UI, or a task queue.
 
+A channel that can tie an answer back to its question (Slack threads, email) reports `correlates? == true`, and the Interviewer lets several questions be outstanding at once. A dumb channel (a bare terminal) reports `false`, and the Interviewer **serializes** — one question on the wire at a time — so an answer is never mis-attributed.
+
 ```ruby
 scripted = RobotLab::Cyborg::Channel::Scripted.new(["yes", "ship it"])
 bot      = RobotLab::Cyborg.new(name: "dewayne", channel: scripted)
@@ -85,21 +87,45 @@ bot      = RobotLab::Cyborg.new(name: "dewayne", channel: scripted)
 oncall   = RobotLab::Cyborg.new(name: "oncall", ask_timeout: 30)   # nil answer if no reply
 ```
 
+### Cooperating in a network
+
+- **Symmetric bus membership.** A Cyborg answers inbound bus tasks out of the box; a Robot opts in with one call — `robot.serve` (run each task through the model and reply) or `robot.respond_to_tasks { |m| ... }`. Both are first-class responders.
+- **Duplex.** Inbound messages/replies are shown to the human on their channel automatically; `cyborg.tell("...")` pushes a line out yourself.
+- **Addressing.** `cyborg.converse(peers: %w[analyst scribe])` starts a `Conversation`: the human addresses peers by `@mention` anywhere in a message (fan-out to all mentioned; **no mention broadcasts to everyone**), and replies come back on the channel.
+- **Listening.** `converse`/`listen` keep reading the channel with no question pending, so the human can speak to the network unprompted (delivered via `on_human`).
+- **Typed answers.** `ask_int`, `ask_confirm`, or `ask(validate:, retries:)` re-ask on bad input and return coerced values.
+- **Presence.** `online!` / `away!` / `offline!` / `available?` — an offline human declines inbound tasks immediately, so the network can route around or escalate.
+
+```ruby
+you = RobotLab::Cyborg.new(name: "you", bus: bus)
+you.converse(peers: %w[analyst scribe])         # @mention to address, no mention = broadcast
+ready = you.ask_confirm("Deploy now?")          # => true / false
+you.away!                                        # still asked, but use a bounded timeout
+```
+
+#### Durable human steps (roadmap)
+
+A human step currently holds a thread while it waits. `ask_async` returns the pending `Question` without blocking — the primitive a durable integration would persist. The intended path is to store a pending decision through **`robot_lab-durable`** (and `robot_lab-to`'s `DecisionManager`) so a human decision survives a process restart and doesn't pin a thread. Per-peer cryptographic identity/attribution (signed events) is the complementary trust direction, on top of the existing per-message `sender`/`from`.
+
 ## Examples
 
-Runnable demos in [`examples/`](examples):
+Runnable demos in [`examples/`](examples) — one feature area each:
 
-- `01_human_in_the_network.rb` — a scripted human as a pipeline step, peers messaging over a bus, and shared memory (network → human). Key-free.
-- `02_terminal_mentions.rb` — a **live** human on the terminal channel who addresses peers by mention: type `@name your message` and it is routed to that peer over the bus, whose reply comes back to your terminal (human → network). Addresses a real **LLM robot** (`@assistant`, a RobotLab robot on a local Ollama model) alongside key-free canned peers — you address all of them the same way. A message with no mention broadcasts to every peer.
-- `03_robot_interviews_cyborg.rb` — the Interviewer the *other* way round: an **LLM robot** (Ollama) interviews the human, one adaptive question at a time. Each question is `delegate`d to the Cyborg, whose Interviewer conducts it on the terminal and hands the answer back; the robot then builds a categorized profile of the human. Answer, `skip`, or `done`.
+- `01_human_in_the_network.rb` — a human as a pipeline step, peers messaging over a bus, shared memory (network → human). Key-free.
+- `02_terminal_mentions.rb` — a **live** human addresses peers by `@mention` via the library `Conversation` (fan-out, and no-mention broadcast); replies return on their own through the duplex. Includes a real **LLM robot** (`@assistant`, Ollama) cooperating via `serve`, plus key-free canned peers.
+- `03_robot_interviews_cyborg.rb` — the Interviewer the *other* way round: an **LLM robot** (Ollama) interviews the human via `delegate`, starting with a **typed** intake (`ask_confirm`/`ask_int`, which re-ask on bad input), then builds a categorized profile.
+- `04_presence_and_availability.rb` — routing to a peer who's actually there: `online`/`away`/`offline`, an offline human declining immediately, and a bounded-timeout escalation. Key-free.
+- `05_listening_and_duplex.rb` — always-on `listen`: the human speaks to the network **unprompted** and replies come back on the channel — both directions handled by the library. Key-free.
 
 ```bash
 ruby examples/01_human_in_the_network.rb
+ruby examples/04_presence_and_availability.rb
+ruby examples/05_listening_and_duplex.rb
 
-# Examples 2 and 3 need a running Ollama with the model pulled (ollama pull
-# qwen3.6); override with OLLAMA_MODEL / OLLAMA_API_BASE. In example 2 the canned
-# peers still work without it — only @assistant requires Ollama.
-ruby examples/02_terminal_mentions.rb        # then type: @assistant write a haiku about deployment
+# Examples 2 and 3 use a real robot on Ollama (ollama pull qwen3.6; override with
+# OLLAMA_MODEL / OLLAMA_API_BASE). In example 2 the canned peers still work
+# without it — only @assistant needs Ollama.
+ruby examples/02_terminal_mentions.rb        # then type: @analyst and @scribe: status?
 ruby examples/03_robot_interviews_cyborg.rb  # the robot asks you the questions
 ```
 

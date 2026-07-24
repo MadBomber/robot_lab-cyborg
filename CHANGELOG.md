@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (from the design/architecture review)
+- **Consumer no longer wedges on a handler error.** An exception in an
+  `on_initiative`/channel path used to kill the Interviewer's consumer thread and
+  hang every future ask; it is now caught (recorded in `Interviewer#last_error`)
+  and the loop keeps serving. *(A1)*
+- **Inbound bus tasks no longer block the poller.** A Cyborg answers an inbound
+  task on its own thread, so a slow or absent human never stalls bus intake, and
+  the default no longer deadlocks. *(A2)*
+- **No more mis-attributed answers on a dumb channel.** On a channel that can't
+  correlate replies (`Channel#correlates? == false`, e.g. a terminal), questions
+  are *serialized* — one on the wire at a time — and an answer resolves that
+  active question. A `Terminal` now honors `receive(timeout:)` (via
+  `wait_readable`), so timeouts, `close`, and expiry actually work. *(A3, A4)*
+- **Shared memory no longer leaks across runs.** `attach_memory`/`detach_memory`
+  make the target explicit, and access is thread-safe. *(A5)*
+- Core `RobotLab::Robot::BusMessaging` synchronizes its message counter/outbox,
+  and gains `respond_to_tasks`/`serve` so a **Robot** auto-answers bus tasks the
+  way a Cyborg does — man/machine peers are now symmetric on the bus. *(A6, B1)*
+
+### Added
+- **Duplex to the human's channel.** Inbound bus messages/replies are now
+  delivered to the human's channel (`Cyborg#tell` for the output direction);
+  `ChannelMessage` carries `sender`/`kind`/`at` so a terminal can label who is
+  speaking and only prompt on questions. *(B2, B5)*
+- **Always-on listening.** `Cyborg#listen`/`converse` keep reading the channel
+  with no question outstanding, so a human can address the network unprompted;
+  their input arrives via `on_human`. *(B3)*
+- **`Conversation`** — `@mention` addressing, multi-mention fan-out, and
+  no-mention broadcast now live in the library (`Cyborg#converse`), not in
+  example code. Replies flow back via the duplex. *(B4)*
+- **Typed/validated answers** — `Cyborg#ask(validate:, retries:)` plus
+  `ask_int`/`ask_confirm` re-ask on bad input and return coerced values. *(C)*
+- **Presence** — `online!`/`away!`/`offline!`/`available?`; an offline human
+  declines inbound tasks immediately so the network can route around/escalate.
+  *(B8)*
+- `Cyborg#ask_async` returns the pending `Question` for non-blocking waits — the
+  primitive a durable/suspendable human step would persist (see README, *Durable
+  human steps*, for the intended `robot_lab-durable` integration — *B7*).
+
 ### Changed
 - Split reaching the human into two concerns: **`Channel`** (the *means* — a
   dumb bidirectional pipe: `deliver` out, `receive` in) and **`Interviewer`**

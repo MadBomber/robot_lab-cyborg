@@ -47,32 +47,68 @@ module RobotLab
       assert_nil channel.receive.in_reply_to
     end
 
+    def test_terminal_labels_an_inbound_message_with_its_sender
+      out = StringIO.new
+      Terminal.new(output: out, name: "you").deliver(
+        ChannelMessage.new(content: "hi there", sender: "analyst", kind: :message)
+      )
+      assert_includes out.string, "[analyst] hi there"
+    end
+
+    def test_terminal_only_questions_get_a_prompt_cursor
+      out = StringIO.new
+      channel = Terminal.new(output: out, name: "you")
+      channel.deliver(ChannelMessage.new(content: "just so you know", kind: :notice))
+      refute_includes out.string, "> "
+      channel.deliver(ChannelMessage.new(content: "your call?", kind: :question))
+      assert_includes out.string, "> "
+    end
+
+    # --- ChannelMessage (B5) --------------------------------------------------
+
+    def test_channel_message_defaults_and_kind_predicate
+      m = ChannelMessage.new(content: "hey")
+      assert_equal :message, m.kind
+      refute_predicate m, :question?
+      assert_kind_of Time, m.at
+      assert_predicate ChannelMessage.new(content: "?", kind: :question), :question?
+    end
+
     # --- scripted ------------------------------------------------------------
+
+    def question(id, content) = ChannelMessage.new(id: id, content: content, kind: :question)
 
     def test_scripted_pairs_each_delivery_with_the_next_answer
       channel = Scripted.new(%w[one two])
-      channel.deliver(ChannelMessage.new(id: 1, content: "a?"))
+      channel.deliver(question(1, "a?"))
       assert_equal "one", channel.receive.content
-      channel.deliver(ChannelMessage.new(id: 2, content: "b?"))
+      channel.deliver(question(2, "b?"))
       assert_equal "two", channel.receive.content
     end
 
     def test_scripted_stamps_the_answer_with_the_question_id
       channel = Scripted.new(["yes"])
-      channel.deliver(ChannelMessage.new(id: 42, content: "go?"))
+      channel.deliver(question(42, "go?"))
       assert_equal 42, channel.receive.in_reply_to
     end
 
     def test_scripted_records_every_question_delivered
       channel = Scripted.new(%w[one])
-      channel.deliver(ChannelMessage.new(id: 1, content: "first?"))
-      channel.deliver(ChannelMessage.new(id: 2, content: "second?"))
+      channel.deliver(question(1, "first?"))
+      channel.deliver(question(2, "second?"))
       assert_equal ["first?", "second?"], channel.asked
+    end
+
+    def test_scripted_does_not_answer_or_record_a_notice
+      channel = Scripted.new(%w[one])
+      channel.deliver(ChannelMessage.new(content: "just fyi", kind: :notice))
+      assert_empty channel.asked
+      assert_nil channel.receive(timeout: 0.05)
     end
 
     def test_scripted_yields_no_answer_when_the_script_is_exhausted
       channel = Scripted.new
-      channel.deliver(ChannelMessage.new(id: 1, content: "q?"))
+      channel.deliver(question(1, "q?"))
       assert_nil channel.receive(timeout: 0.05)
     end
   end

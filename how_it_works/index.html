@@ -1,0 +1,1388 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A human peer worker for the RobotLab LLM agent framework">
+      
+      
+        <meta name="author" content="Dewayne VanHoozer">
+      
+      
+        <link rel="canonical" href="https://madbomber.github.io/robot_lab-cyborg/how_it_works/">
+      
+      
+        <link rel="prev" href="../getting_started/">
+      
+      
+        <link rel="next" href="../api_reference/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>How It Works - robot_lab-cyborg</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-it-works" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="robot_lab-cyborg" class="md-header__button md-logo" aria-label="robot_lab-cyborg" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 17v2h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H5v-1.5c0-1.93 3.13-3.5 7-3.5s7 1.57 7 3.5V17zM12 3a3.5 3.5 0 0 1 3.5 3.5A3.5 3.5 0 0 1 12 10a3.5 3.5 0 0 1-3.5-3.5A3.5 3.5 0 0 1 12 3"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            robot_lab-cyborg
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              How It Works
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/MadBomber/robot_lab-cyborg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MadBomber/robot_lab-cyborg
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting_started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  How It Works
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api_reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../custom_channels/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Building Custom Channels
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="robot_lab-cyborg" class="md-nav__button md-logo" aria-label="robot_lab-cyborg" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 17v2h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H5v-1.5c0-1.93 3.13-3.5 7-3.5s7 1.57 7 3.5V17zM12 3a3.5 3.5 0 0 1 3.5 3.5A3.5 3.5 0 0 1 12 10a3.5 3.5 0 0 1-3.5-3.5A3.5 3.5 0 0 1 12 3"/></svg>
+
+    </a>
+    robot_lab-cyborg
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/MadBomber/robot_lab-cyborg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MadBomber/robot_lab-cyborg
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-means-and-the-process-channel-and-interviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Means and the Process: Channel and Interviewer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Means and the Process: Channel and Interviewer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channelmessage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ChannelMessage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#built-in-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asking-asynchronously" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Asking Asynchronously
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Asking Asynchronously">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-background-consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Background Consumer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlation-vs-serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correlation vs. Serialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreting-an-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreting an Answer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeouts-and-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeouts and Expiry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cyborg-the-human-peer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cyborg: The Human Peer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cyborg: The Human Peer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#network-member-and-bus-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Member and Bus Contracts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-inbound-task-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Inbound Task Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duplex-talking-back-to-the-human" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Duplex: Talking Back to the Human
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#always-on-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always-On Listening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#presence-and-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presence and Availability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typed-and-validated-answers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed and Validated Answers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conversation-multi-peer-chat-by-mention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conversation: Multi-Peer Chat by @mention
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roadmap-durable-human-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roadmap: Durable Human Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_channels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Custom Channels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-means-and-the-process-channel-and-interviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Means and the Process: Channel and Interviewer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Means and the Process: Channel and Interviewer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channelmessage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ChannelMessage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#built-in-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asking-asynchronously" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Asking Asynchronously
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Asking Asynchronously">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-background-consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Background Consumer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlation-vs-serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correlation vs. Serialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreting-an-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreting an Answer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeouts-and-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeouts and Expiry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cyborg-the-human-peer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cyborg: The Human Peer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cyborg: The Human Peer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#network-member-and-bus-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Member and Bus Contracts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-inbound-task-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Inbound Task Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duplex-talking-back-to-the-human" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Duplex: Talking Back to the Human
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#always-on-listening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always-On Listening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#presence-and-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presence and Availability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typed-and-validated-answers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed and Validated Answers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delegation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conversation-multi-peer-chat-by-mention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conversation: Multi-Peer Chat by @mention
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roadmap-durable-human-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roadmap: Durable Human Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/MadBomber/robot_lab-cyborg/edit/main/docs/how_it_works.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/MadBomber/robot_lab-cyborg/raw/main/docs/how_it_works.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h1>
+<h2 id="the-means-and-the-process-channel-and-interviewer">The Means and the Process: Channel and Interviewer<a class="headerlink" href="#the-means-and-the-process-channel-and-interviewer" title="Permanent link">&para;</a></h2>
+<p>Reaching the human is deliberately split into two small, separately-testable concerns:</p>
+<ul>
+<li><strong><code>Channel</code></strong> is the <em>means</em> — a dumb, bidirectional pipe. It knows how to <code>deliver</code> a message <strong>out</strong> to the human and how to <code>receive</code> a message the human sends <strong>in</strong>. It has no concept of a "question" or an "answer" — just messages crossing a boundary.</li>
+<li><strong><code>Interviewer</code></strong> is the <em>process</em> — it conducts the interaction over whatever channel is injected. It tracks which questions are outstanding, decides which inbound message answers which question, and surfaces everything else as unsolicited human <em>initiative</em>.</li>
+</ul>
+<p>This split is why <code>$stdin</code>/<code>$stdout</code> live <strong>only</strong> inside <code>Channel::Terminal</code> — nothing else in the gem assumes a terminal. Swapping in a Slack, email, or web-form channel changes nothing about how <code>Interviewer</code>, <code>Cyborg</code>, or <code>Conversation</code> work. See <a href="../custom_channels/">Building Custom Channels</a> to write one.</p>
+<h3 id="channelmessage"><code>ChannelMessage</code><a class="headerlink" href="#channelmessage" title="Permanent link">&para;</a></h3>
+<p>The one data shape that crosses the boundary in both directions:</p>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="no">ChannelMessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Data</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="ss">:id</span><span class="p">,</span><span class="w"> </span><span class="ss">:content</span><span class="p">,</span><span class="w"> </span><span class="ss">:in_reply_to</span><span class="p">,</span><span class="w"> </span><span class="ss">:sender</span><span class="p">,</span><span class="w"> </span><span class="ss">:kind</span><span class="p">,</span><span class="w"> </span><span class="ss">:at</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>the question id this message carries (outbound) or answers (inbound, when the channel can correlate)</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td>the human-readable text</td>
+</tr>
+<tr>
+<td><code>in_reply_to</code></td>
+<td>set by the channel when it can tie an inbound answer to a specific question (a Slack thread, an email <code>In-Reply-To</code>)</td>
+</tr>
+<tr>
+<td><code>sender</code></td>
+<td>who the message is from/for, for display</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>:question</code> | <code>:answer</code> | <code>:message</code> | <code>:notice</code></td>
+</tr>
+<tr>
+<td><code>at</code></td>
+<td><code>Time.now</code> unless given</td>
+</tr>
+</tbody>
+</table>
+<p><code>kind == :question</code> (checked via the <code>question?</code> predicate) is what tells <code>Channel::Terminal</code> to print a <code>&gt;</code> prompt after the line; other kinds (inbound peer messages, notices) print without one, so unsolicited traffic doesn't spam the input cursor.</p>
+<h3 id="built-in-channels">Built-in Channels<a class="headerlink" href="#built-in-channels" title="Permanent link">&para;</a></h3>
+<p><strong><code>Channel::Terminal</code></strong> — the human at a keyboard, and the default when no <code>channel:</code> is given.</p>
+<ul>
+<li><code>input:</code>/<code>output:</code> are injectable (default <code>$stdin</code>/<code>$stdout</code>); inject <code>StringIO</code> in tests.</li>
+<li><code>deliver</code> is synchronized with a <code>Mutex</code> so a question and an inbound peer message never interleave on screen.</li>
+<li><code>receive(timeout:)</code> uses <code>IO.wait_readable</code> on a real IO so timeouts, shutdown, and question expiry all work; a non-selectable stream (a <code>StringIO</code> in tests) returns immediately from <code>#gets</code>, which is equally responsive.</li>
+<li>A <code>nil</code> line from <code>#gets</code> (EOF) is treated as "nothing arrived" and propagates as <code>nil</code>.</li>
+<li><code>correlates?</code> is <code>false</code> — a bare terminal carries no correlation, so <code>in_reply_to</code> always stays <code>nil</code> on what it produces.</li>
+</ul>
+<p><strong><code>Channel::Scripted</code></strong> — canned answers for tests, automation, and replay.</p>
+<ul>
+<li>Constructed with an array (or single value) of answers, consumed in order.</li>
+<li><code>correlates?</code> is <code>true</code> — each delivered question is paired with the <em>next</em> scripted answer <strong>at delivery time</strong> and stamped with that question's id, so correlation is exact and deterministic.</li>
+<li>Every question shown is recorded in <code>#asked</code>, so tests can assert on what the human saw: <code>cyborg.channel.asked</code>.</li>
+<li>When the script runs dry, a delivered question simply goes unanswered — modeling a human who never replies — and the <code>Interviewer</code>'s timeout (if any) takes over. Supply enough answers, or an <code>ask_timeout</code>, for any code path that asks more questions than you scripted.</li>
+</ul>
+<h2 id="asking-asynchronously">Asking Asynchronously<a class="headerlink" href="#asking-asynchronously" title="Permanent link">&para;</a></h2>
+<p>Asking is <strong>always</strong> asynchronous, whatever the channel — a human's answer may be the very next message, may arrive several messages later (after they say other things first), or may never come at all. So <code>Interviewer#ask</code> never blocks: it delivers the question and returns a <code>Question</code>, a one-shot future, immediately.</p>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">question</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interviewer</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s2">&quot;Deploy now?&quot;</span><span class="p">)</span><span class="w">   </span><span class="c1"># returns instantly</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># ... do other things ...</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">answer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">question</span><span class="o">.</span><span class="n">answer</span><span class="p">(</span><span class="ss">timeout</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">)</span><span class="w">       </span><span class="c1"># blocks here, not before</span>
+</span></code></pre></div>
+<p><code>Interviewer#ask_and_wait</code> (and <code>Cyborg#ask</code>) combine both steps into one call for the common synchronous case — this is the boundary a pipeline step or a bus task handler actually needs: block <em>this</em> thread, but don't block the channel's consumer thread.</p>
+<p><code>Cyborg#ask_async</code> exposes the non-blocking primitive directly, returning the pending <code>Question</code> so the caller decides when (and whether) to wait — the primitive a durable/suspendable human step would need to persist (see <a href="#roadmap-durable-human-steps">Roadmap: Durable Human Steps</a>).</p>
+<h3 id="the-background-consumer">The Background Consumer<a class="headerlink" href="#the-background-consumer" title="Permanent link">&para;</a></h3>
+<p><code>Interviewer</code> lazily starts a single background thread (<code>ensure_consumer</code>) the first time a question is outstanding, or when <code>#listen</code> is called. It polls <code>channel.receive(timeout: 0.05)</code> in a loop and, for each inbound message, either resolves the question it answers or calls the <code>on_initiative</code> handler.</p>
+<p>The consumer is deliberately hard to kill:</p>
+<ul>
+<li><strong>A handler or channel error never wedges it.</strong> Any <code>StandardError</code> raised while dispatching a message (in a channel read, in <code>on_initiative</code>, in interpreting an answer) is caught, recorded in <code>Interviewer#last_error</code>, and the loop keeps running. Before this, a throwing handler used to kill the consumer thread and hang every future <code>ask</code> — this was fixed as part of a design review (see <code>CHANGELOG.md</code>, item <em>A1</em>).</li>
+<li><strong>It stops itself once idle</strong>, unless <code>#listen</code> has been called: no questions outstanding and not in always-on mode → the loop exits and <code>@running</code> resets, so the next <code>#ask</code> (or <code>#listen</code>) restarts it cleanly. Both the start and stop paths flip <code>@running</code> under the same mutex, so a restart can never race a shutdown.</li>
+<li><strong><code>#close</code></strong> stops it for good and closes the channel — call this when a <code>Cyborg</code>/<code>Interviewer</code> is done and its channel resources (a socket, a file handle) need releasing.</li>
+</ul>
+<h3 id="correlation-vs-serialization">Correlation vs. Serialization<a class="headerlink" href="#correlation-vs-serialization" title="Permanent link">&para;</a></h3>
+<p>Whether more than one question can be outstanding at once depends entirely on the channel:</p>
+<ul>
+<li>A channel that <strong>can</strong> tie an inbound answer back to its question (<code>correlates? == true</code> — Slack threads, email <code>In-Reply-To</code>, <code>Channel::Scripted</code>) lets any number of questions be outstanding concurrently. Each is delivered immediately; <code>Interviewer#dispatch</code> resolves whichever one an inbound message's <code>in_reply_to</code> names.</li>
+<li>A channel that <strong>cannot</strong> (<code>correlates? == false</code> — a bare terminal) gets <strong>serialized</strong>: only one question is ever "on the wire" at a time (<code>@active_id</code>). Additional <code>ask</code> calls queue in <code>@pending</code> and are delivered one at a time as the active question resolves or expires (<code>pump_pending</code>/<code>release_active</code>). An inbound message with no <code>in_reply_to</code> resolves whichever question is currently active. This makes mis-attribution — a fast second answer accidentally resolving the first question — impossible.</li>
+</ul>
+<p>An inbound message that names no outstanding question (an unknown/expired id, or an answer arriving when nothing is active) matches nothing and is routed to <code>on_initiative</code> instead — the human speaking as a peer, unprompted.</p>
+<h3 id="interpreting-an-answer">Interpreting an Answer<a class="headerlink" href="#interpreting-an-answer" title="Permanent link">&para;</a></h3>
+<p>Before resolving a <code>Question</code>, the <code>Interviewer</code> runs the raw text through <code>interpret</code>:</p>
+<ul>
+<li>An empty answer falls back to the question's <code>default</code>, when one was given.</li>
+<li>If the question had <code>choices:</code>, a bare number is mapped to the corresponding choice (1-indexed) — out-of-range numbers, and any non-numeric text, pass through unchanged as free text.</li>
+<li>The result is always coerced to a <code>String</code>, so a genuine empty answer (<code>""</code>) is never confused with a timeout (<code>nil</code>).</li>
+</ul>
+<h3 id="timeouts-and-expiry">Timeouts and Expiry<a class="headerlink" href="#timeouts-and-expiry" title="Permanent link">&para;</a></h3>
+<p><code>Question#answer(timeout:)</code> blocks on an internal <code>Thread::Queue</code> (the mailbox <code>Interviewer#dispatch</code> pushes into). If nothing arrives within <code>timeout</code>:</p>
+<ol>
+<li>The question calls back into <code>Interviewer#expire(self)</code>, which removes it from the outstanding set (so a later, unrelated answer can never claim it) and, on a serialized channel, advances the queue to the next pending question.</li>
+<li><code>#answer</code> returns the question's <code>default</code> (<code>nil</code> if none was given).</li>
+</ol>
+<p><code>nil</code> from <code>#answer</code> is therefore unambiguous: it means "no answer, no default" — never "the human answered with an empty string."</p>
+<h2 id="cyborg-the-human-peer">Cyborg: The Human Peer<a class="headerlink" href="#cyborg-the-human-peer" title="Permanent link">&para;</a></h2>
+<h3 id="network-member-and-bus-contracts">Network Member and Bus Contracts<a class="headerlink" href="#network-member-and-bus-contracts" title="Permanent link">&para;</a></h3>
+<p><code>Cyborg</code> satisfies the same two contracts a <code>Robot</code> does, so a network (or another peer) never has to know which one it's talking to:</p>
+<ul>
+<li><strong>The <code>SimpleFlow</code> step contract</strong> — <code>#call(result)</code>. The network invokes this when a pipeline reaches the human's task; <code>Cyborg</code> extracts the incoming message and shared memory from the pipeline <code>Result</code> (<code>extract_run_context</code>), calls its own <code>#run</code>, and threads a <code>RobotResult</code> back into the pipeline the same way a robot's step would (<code>result.with_context(name, robot_result).continue(robot_result)</code>). Any exception is caught and turned into an error-shaped <code>RobotResult</code> rather than raising through the pipeline.</li>
+<li><strong>The <code>#run</code> contract</strong> — <code>run(message = nil, network_memory: nil, memory: nil, **)</code>. This is what makes a <code>Cyborg</code> a valid <code>delegate</code>/<code>spawn</code> target anywhere a <code>Robot</code> is: it asks the human the given message (via <code>#ask</code>) and wraps the answer in a <code>RobotResult</code>, so <code>result.reply</code> works identically regardless of which kind of peer produced it.</li>
+</ul>
+<p><code>Cyborg</code> also <strong>includes <code>RobotLab::Robot::BusMessaging</code> verbatim</strong> — the same module <code>Robot</code> uses for <code>send_message</code>/<code>send_reply</code>/<code>on_message</code>/<code>spawn</code>/bus-poller wiring. This is why a robot and a human are wire-compatible peers on the same <code>TypedBus</code>: there is only one implementation of "how a member talks on the bus," shared by both.</p>
+<p><strong>Caveat:</strong> <code>Cyborg#initialize</code> wires its own inbound handler — <code>@message_handler = method(:handle_incoming)</code> — to get its default human-in-the-loop behavior (surface the task, ask, auto-reply). <code>BusMessaging#on_message</code>, <code>#respond_to_tasks</code>, and <code>#serve</code> all <em>replace</em> <code>@message_handler</code> wholesale. Calling any of them on a <code>Cyborg</code> overwrites <code>handle_incoming</code> and disables the built-in ask/auto-reply flow — those three methods are meant for <code>Robot</code>s opting <em>into</em> task-serving behavior a <code>Cyborg</code> already has by default. If you need custom bus-message handling on a <code>Cyborg</code>, build it around <code>#on_task</code>/<code>#on_human</code> instead (see below), not <code>#on_message</code>.</p>
+<h3 id="the-inbound-task-lifecycle">The Inbound Task Lifecycle<a class="headerlink" href="#the-inbound-task-lifecycle" title="Permanent link">&para;</a></h3>
+<p><code>handle_incoming(message)</code> — the private method wired as <code>@message_handler</code> — is what runs on the bus poller's drain thread for every message addressed to this peer:</p>
+<ol>
+<li>The message is recorded in <code>#inbox</code> (thread-safe, for later inspection).</li>
+<li>If it's a <strong>reply</strong> to something this peer sent earlier, it's shown to the human via the channel (<code>kind: :message</code>) and handling stops there — replies don't get re-asked as tasks.</li>
+<li>Otherwise it's a <strong>fresh task</strong>, handled by <code>respond_to_task</code>.</li>
+</ol>
+<p><code>respond_to_task</code> never blocks the poller:</p>
+<ul>
+<li>If the peer is <code>!available?</code> (offline), it declines immediately — a reply saying <code>"(name is unavailable)"</code> is sent back at once (if <code>auto_reply</code> and a bus are configured) rather than waiting on a human who won't answer.</li>
+<li>Otherwise, it spawns a <strong>new thread</strong> that asks the human (<code>ask(task_prompt(message))</code>), sends the answer back as a reply once it arrives (again, if <code>auto_reply</code> and a bus are configured, and only if there is an answer), and invokes the <code>#on_task</code> callback with the original message and the answer. Any error in that thread is caught and logged with <code>warn</code>, not raised — a slow or crashing human-answer thread can never take down the bus poller.</li>
+</ul>
+<p>This is the fix for a real deadlock: before it, an inbound task ran synchronously on the poller thread, so a slow (or absent) human blocked delivery of every other message to every other peer sharing that poller group.</p>
+<h3 id="duplex-talking-back-to-the-human">Duplex: Talking Back to the Human<a class="headerlink" href="#duplex-talking-back-to-the-human" title="Permanent link">&para;</a></h3>
+<p>Two directions, both automatic in the common case:</p>
+<ul>
+<li><strong>Network → human</strong>: any inbound bus message or reply is shown on the channel via <code>deliver_to_human</code>, best-effort (a channel error here is swallowed — a broken display must never break message intake). Call <code>Cyborg#tell(text, kind: :notice)</code> yourself to push an unprompted line (a status update, a warning) the same way.</li>
+<li><strong>Human → network</strong>: an inbound channel message that answers no outstanding question is <em>initiative</em> — the human speaking unprompted. <code>Interviewer#on_initiative</code> routes it to <code>Cyborg#handle_human_initiative</code>, which in turn calls the <code>#on_human</code> callback you register. <code>Conversation</code> (below) is the built-in way to turn that initiative into addressed bus tasks; you can also register <code>#on_human</code> directly for custom routing.</li>
+</ul>
+<h3 id="always-on-listening">Always-On Listening<a class="headerlink" href="#always-on-listening" title="Permanent link">&para;</a></h3>
+<p>By default, the <code>Interviewer</code>'s consumer thread only runs while a question is outstanding — there's nothing to read otherwise. <code>Cyborg#listen</code> (and <code>Conversation#start</code>, which calls it) keeps the consumer alive with <em>no</em> question pending, so the human can address the network unprompted at any time; their input arrives via <code>#on_human</code>. <code>#unlisten</code> (and <code>Conversation#stop</code>) turn this back off; the consumer then winds down once nothing is outstanding, same as normal.</p>
+<h3 id="presence-and-availability">Presence and Availability<a class="headerlink" href="#presence-and-availability" title="Permanent link">&para;</a></h3>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">online!</span><span class="w">      </span><span class="c1"># taking work now (default)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">away!</span><span class="w">         </span><span class="c1"># present but slow — still asked, use a generous timeout</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">offline!</span><span class="w">      </span><span class="c1"># not taking work — inbound tasks declined immediately</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">available?</span><span class="w">    </span><span class="c1"># =&gt; false only when :offline</span>
+</span></code></pre></div>
+<p>Presence is plain in-memory state (<code>@presence</code>, guarded by a mutex) — it doesn't itself change <em>how</em> a question is asked, only what <code>respond_to_task</code> does with an inbound bus task before asking at all. A network or dispatcher can check <code>available?</code> before routing work to a specific human, to pick another peer or escalate instead of tasking someone who will just decline (or, if <code>:away</code>, take a long time).</p>
+<h3 id="typed-and-validated-answers">Typed and Validated Answers<a class="headerlink" href="#typed-and-validated-answers" title="Permanent link">&para;</a></h3>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s2">&quot;Deploy?&quot;</span><span class="p">)</span><span class="w">                                    </span><span class="c1"># raw text (or the default)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">ask_int</span><span class="p">(</span><span class="s2">&quot;How many replicas?&quot;</span><span class="p">)</span><span class="w">                      </span><span class="c1"># re-asks until a parseable Integer</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">ask_confirm</span><span class="p">(</span><span class="s2">&quot;Proceed?&quot;</span><span class="p">)</span><span class="w">                            </span><span class="c1"># =&gt; true / false / nil</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s2">&quot;Pick one&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">choices</span><span class="p">:</span><span class="w"> </span><span class="sx">%w[a b c]</span><span class="p">)</span><span class="w">                </span><span class="c1"># numbered choices; a bare digit maps to one</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s2">&quot;Env?&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">validate</span><span class="p">:</span><span class="w"> </span><span class="o">-&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="sx">%w[dev prod]</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">?</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kp">nil</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="ss">retries</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+</span></code></pre></div>
+<p><code>#ask</code>'s <code>validate:</code> contract: return the (optionally coerced) value when the answer is acceptable, or <code>nil</code> to reject it. On rejection, <code>Cyborg</code> tells the human why (<code>"Sorry, I couldn't use ..."</code>) and re-asks, up to <code>retries</code> extra attempts, after which it falls back to <code>default</code>. <code>ask_int</code>/<code>ask_confirm</code> are just <code>ask</code> with a pre-built <code>validate:</code>.</p>
+<h3 id="delegation">Delegation<a class="headerlink" href="#delegation" title="Permanent link">&para;</a></h3>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cyborg</span><span class="o">.</span><span class="n">delegate</span><span class="p">(</span><span class="ss">to</span><span class="p">:</span><span class="w"> </span><span class="n">some_robot_or_cyborg</span><span class="p">,</span><span class="w"> </span><span class="ss">task</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Summarize this&quot;</span><span class="p">)</span><span class="w">     </span><span class="c1"># blocks, returns RobotResult</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">future</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cyborg</span><span class="o">.</span><span class="n">delegate</span><span class="p">(</span><span class="ss">to</span><span class="p">:</span><span class="w"> </span><span class="n">some_robot_or_cyborg</span><span class="p">,</span><span class="w"> </span><span class="ss">task</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Summarize this&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">async</span><span class="p">:</span><span class="w"> </span><span class="kp">true</span><span class="p">)</span><span class="w">  </span><span class="c1"># returns a DelegationFuture</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">future</span><span class="o">.</span><span class="n">value</span><span class="w">            </span><span class="c1"># blocks here instead; raises DelegationFuture::DelegationTimeout if value(timeout:) expires</span>
+</span></code></pre></div>
+<p><code>delegate</code> works against <strong>any</strong> target that responds to <code>#run</code> — a <code>Robot</code> or another <code>Cyborg</code> — because both satisfy the same <code>#run</code> contract. The synchronous form calls <code>to.run(task, **)</code> directly and stamps <code>delegated_by</code> on the result. The async form spawns a <code>Thread</code>, resolves or rejects a <code>RobotLab::DelegationFuture</code> from it, and returns the future immediately — so a human (or a robot) can fan a task out to several peers in parallel and collect results later.</p>
+<p><code>assign(to:, task:)</code> is the fire-and-forget bus counterpart — an alias for <code>BusMessaging#send_message</code>, named for how a human hands off work; correlate its reply later via <code>cyborg.outbox[message.key]</code>.</p>
+<h3 id="shared-memory">Shared Memory<a class="headerlink" href="#shared-memory" title="Permanent link">&para;</a></h3>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="ss">:decision</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ship it&quot;</span><span class="p">)</span><span class="w">       </span><span class="c1"># writes to the active memory</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="ss">:sentiment</span><span class="p">,</span><span class="w"> </span><span class="ss">wait</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">)</span><span class="w">         </span><span class="c1"># reads from it, optionally blocking for up to 30s</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">attach_memory</span><span class="p">(</span><span class="n">some_network_memory</span><span class="p">)</span><span class="w">   </span><span class="c1"># explicit target (a network run does this for you)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">cyborg</span><span class="o">.</span><span class="n">detach_memory</span><span class="w">                        </span><span class="c1"># back to this peer&#39;s own standalone memory</span>
+</span></code></pre></div>
+<p>"The active memory" is the network's shared memory while attached, and this peer's own standalone <code>memory:</code> otherwise (<code>current_memory</code>, mutex-guarded). <code>#run</code> calls <code>attach_memory</code> automatically whenever a <code>network_memory:</code> is passed in — which is how a network run wires it up without you doing so by hand. Detaching explicitly matters when a peer might otherwise keep writing to a finished network's memory after that run has ended.</p>
+<p><code>remember</code>/<code>recall</code> additionally set/restore the memory's <code>current_writer</code> around the call (<code>with_writer</code>, a no-op for memory implementations that don't track one) — a no-op for memories that don't track a writer, and otherwise how downstream consumers know a given memory write came from this human rather than a robot.</p>
+<h2 id="conversation-multi-peer-chat-by-mention">Conversation: Multi-Peer Chat by <a class="magiclink magiclink-github magiclink-mention" href="https://github.com/mention" title="GitHub User: mention">@mention</a><a class="headerlink" href="#conversation-multi-peer-chat-by-mention" title="Permanent link">&para;</a></h2>
+<p><code>Conversation</code> turns a listening <code>Cyborg</code> into an interactive participant among several named peers:</p>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">you</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="no">RobotLab</span><span class="o">::</span><span class="no">Cyborg</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;you&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">bus</span><span class="p">:</span><span class="w"> </span><span class="n">bus</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">chat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">you</span><span class="o">.</span><span class="n">converse</span><span class="p">(</span><span class="ss">peers</span><span class="p">:</span><span class="w"> </span><span class="sx">%w[analyst scribe]</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># human types: &quot;hey @analyst and @scribe: status?&quot;  -&gt; both are tasked</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># human types: &quot;status?&quot;                             -&gt; broadcasts to both (no mention = everyone)</span>
+</span></code></pre></div>
+<p><code>Cyborg#converse(peers:)</code> is sugar for <code>Conversation.new(cyborg: self, peers: peers).start</code>. <code>#start</code> registers an <code>#on_human</code> handler that routes each unprompted line and calls <code>#listen</code>; <code>#stop</code> calls <code>#unlisten</code>.</p>
+<p>Routing rules (<code>Conversation#route</code>):</p>
+<ul>
+<li>Every <code>@name</code> mention in the line (via the <code>MENTION = /@(\w+)/</code> pattern, in order of first appearance, deduplicated) addresses that peer.</li>
+<li>A line with <strong>no</strong> mention broadcasts to <strong>every</strong> known peer.</li>
+<li>A line whose mentions are <em>all</em> unknown peers is <strong>not sent</strong> — <code>Conversation</code> tells the human which name(s) weren't recognized, and (if there were no other, valid mentions) which peers <em>are</em> known.</li>
+<li>A line mixing known and unknown mentions still sends to the known ones, after reporting the unknown ones.</li>
+</ul>
+<p>Replies come back automatically — <code>Cyborg</code>'s duplex delivers inbound bus traffic to the channel regardless of how the outbound task was sent, so <code>Conversation</code> only has to handle the human → network direction; it never polls for or renders replies itself.</p>
+<p><code>add_peer(name)</code> grows the addressable roster after construction (e.g. as new robots join a running session).</p>
+<h2 id="roadmap-durable-human-steps">Roadmap: Durable Human Steps<a class="headerlink" href="#roadmap-durable-human-steps" title="Permanent link">&para;</a></h2>
+<p>A human step currently holds a thread while it waits (<code>ask</code>/<code>ask_and_wait</code> block; the underlying <code>Question#answer</code> sits on a blocking <code>Thread::Queue#pop</code>). <code>ask_async</code> returns the pending <code>Question</code> without blocking — the primitive a durable integration would need to persist across a process restart. The intended path, per the gem's <code>CHANGELOG.md</code> and <code>README.md</code>, is to store a pending decision through <strong><code>robot_lab-durable</code></strong> (and <code>robot_lab-to</code>'s <code>DecisionManager</code>) so a human decision survives a restart without pinning a thread for the duration. Per-peer cryptographic identity/attribution (signed events), building on the existing per-message <code>sender</code>/<code>from</code>, is a complementary but separate direction. Neither is implemented in this gem as of this writing — treat this section as intent, not a shipped feature.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../getting_started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Getting Started
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../api_reference/" class="md-footer__link md-footer__link--next" aria-label="Next: API Reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                API Reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Dewayne VanHoozer
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/MadBomber/robot_lab-cyborg" target="_blank" rel="noopener" title="robot_lab-cyborg on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://rubygems.org/gems/robot_lab-cyborg" target="_blank" rel="noopener" title="robot_lab-cyborg on RubyGems" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M116.7 33.8c4.5-6.1 11.7-9.8 19.3-9.8h240c7.6 0 14.8 3.6 19.3 9.8l112 152c6.8 9.2 6.1 21.9-1.5 30.4l-232 256c-4.5 5-11 7.9-17.8 7.9s-13.2-2.9-17.8-7.9l-232-256c-7.7-8.5-8.3-21.2-1.5-30.4zm38.5 39.8c-3.3 2.5-4.2 7-2.1 10.5l57.4 95.7L63.3 192c-4.1.3-7.3 3.8-7.3 8s3.2 7.6 7.3 8l192 16h1.3l192-16c4.1-.3 7.3-3.8 7.3-8s-3.2-7.6-7.3-8l-147.2-12.3 57.4-95.6c2.1-3.5 1.2-8.1-2.1-10.5s-7.9-2-10.7 1l-90 97.6-90.1-97.6c-2.8-3-7.4-3.4-10.7-1"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "header.autohide", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

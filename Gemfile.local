@@ -10,6 +10,7 @@ gem "flog"
 gem "irb"
 gem "racc"
 gem "rake", "~> 13.0"
+gem "reek"
 gem "rubocop"
 
 gem "minitest", "~> 5.16"

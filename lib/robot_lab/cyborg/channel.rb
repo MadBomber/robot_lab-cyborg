@@ -19,6 +19,8 @@ module RobotLab
     # @!attribute kind         [Symbol] :question | :answer | :message | :notice
     # @!attribute at           [Time] when the message was created
     ChannelMessage = Data.define(:id, :content, :in_reply_to, :sender, :kind, :at) do
+      # :reek:ControlParameter -- nil at means "stamp with Time.now"; a default,
+      # not a behavior switch.
       def initialize(content:, id: nil, in_reply_to: nil, sender: nil, kind: :message, at: nil)
         super(id:, content: content.to_s, in_reply_to:, sender:, kind:, at: at || Time.now)
       end

@@ -62,6 +62,8 @@ module RobotLab
       #
       # @param line [String]
       # @return [Array<String>] the peers the message was sent to
+      # :reek:FeatureEnvy -- parsing the human's raw line (strip/scan for
+      # mentions) is this router's whole job; the String has no better home.
       def route(line)
         line = line.to_s.strip
         return [] if line.empty?

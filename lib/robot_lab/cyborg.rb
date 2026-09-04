@@ -36,6 +36,11 @@ module RobotLab
   #   analyst.send_message(to: :dewayne, content: "Approve deploy? (yes/no)")
   #   # dewayne's human is prompted; the answer is sent back as a reply
   #
+  # :reek:TooManyInstanceVariables :reek:TooManyMethods -- a Cyborg is a full
+  # network peer: it must carry the ivars the BusMessaging mixin expects plus
+  # its own channel/interviewer/presence state, and mirror Robot's member
+  # surface (run/call/delegate/remember/recall) so humans and robots are
+  # interchangeable.
   class Cyborg
     include RobotLab::Robot::BusMessaging
 
@@ -72,6 +77,10 @@ module RobotLab
     # @param memory [RobotLab::Memory, nil] standalone memory (default: fresh)
     # @param ask_timeout [Numeric, nil] seconds to wait for the human before
     #   giving up on an answer (nil = wait indefinitely)
+    # :reek:BooleanParameter -- auto_reply is a stored config flag, read later
+    # by the bus handlers, not a mode switch inside this method.
+    # :reek:ControlParameter -- nil memory/channel/interviewer mean "build the
+    # default"; each `||` is a fallback, not a behavior switch.
     def initialize(name:, bus: nil, channel: nil, interviewer: nil,
                    auto_reply: true, memory: nil, ask_timeout: nil)
       @name = name.to_s
@@ -136,6 +145,8 @@ module RobotLab
     # @param network_memory [RobotLab::Memory, nil] shared memory when in a network
     # @param memory [RobotLab::Memory, nil] explicit memory override
     # @return [RobotResult]
+    # :reek:ControlParameter -- nil memory/network_memory fall back to this
+    # peer's own memory; defaults, not behavior switches.
     def run(message = nil, network_memory: nil, memory: nil, **_kwargs)
       active = memory || network_memory || @memory
       attach_memory(network_memory) if network_memory
@@ -159,6 +170,10 @@ module RobotLab
     #   answer is acceptable, or nil to reject and re-ask
     # @param retries [Integer] extra attempts allowed when validation rejects
     # @return [Object, nil] the human's answer (coerced when validated)
+    # :reek:LongParameterList { max_params: 6 } -- one keyword per aspect of a
+    # question (choices/default/timeout/validation/retries).
+    # :reek:TooManyStatements -- the ask/validate/re-ask retry loop, one step
+    # per line; flog gates its real complexity.
     def ask(question, choices: nil, default: nil, timeout: @ask_timeout, validate: nil, retries: 2)
       attempt = 0
       loop do
@@ -315,6 +330,9 @@ module RobotLab
     # @param task [String] the task message
     # @param async [Boolean] when true, returns a DelegationFuture immediately
     # @return [RobotResult, DelegationFuture]
+    # :reek:BooleanParameter :reek:ControlParameter :reek:TooManyStatements --
+    # mirrors Robot#delegate's API and shape exactly: async picks the
+    # future-vs-sync return, and the two branches are the whole method.
     def delegate(to:, task:, async: false, **)
       if async
         future = DelegationFuture.new(robot_name: to.name, delegated_by: @name)
@@ -353,6 +371,8 @@ module RobotLab
     # @param key [Object]
     # @param wait [Boolean, Numeric] false, true, or seconds to wait
     # @return [Object, nil]
+    # :reek:BooleanParameter -- wait is forwarded verbatim to Memory#get, whose
+    # API it belongs to.
     def recall(key, wait: false)
       current_memory.get(key, wait: wait)
     end
@@ -407,6 +427,8 @@ module RobotLab
 
     # Run the block with +memory+'s current writer set to this peer, restoring it
     # afterward. A no-op for memories that don't track a writer.
+    # :reek:FeatureEnvy -- save/set/restore of the writer on whichever memory is
+    # active for this run; the bookkeeping is the wrapper's job, not Memory's.
     def with_writer(memory)
       return yield unless memory.respond_to?(:current_writer=)
 

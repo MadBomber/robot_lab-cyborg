@@ -155,6 +155,8 @@ module RobotLab
       end
 
       # If +id+ was the active question, clear it and deliver the next queued one.
+      # :reek:ControlParameter -- id is correlation data compared against
+      # @active_id to decide whether this question held the wire; not a mode flag.
       def release_active(id)
         advanced = @mutex.synchronize do
           next false unless @active_id == id

@@ -1,0 +1,7 @@
+# False-positive suppressions for the typos quality gate (asgard).
+# Everything here was reviewed by hand — see git history for context.
+
+[default.extend-identifiers]
+# Docs and comments hyphenate "mis-attributed"/"mis-attribution"; typos
+# tokenizes the prefix alone and flags it.
+mis = "mis"

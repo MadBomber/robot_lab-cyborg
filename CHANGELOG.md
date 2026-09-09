@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-09-09
+
+Released in lockstep with `robot_lab` core v0.2.8: this gem now resolves the released core gem from RubyGems instead of the local sibling checkout (local-path development remains available via `BUNDLE_GEMFILE=Gemfile.local`). Also in this release: 17 reek false positives annotated inline, reek added to the development bundle, gem lifecycle tasks moved to asgard, and the release `Gemfile` no longer overrides `robot_lab` with the local checkout.
+
 ### Fixed (from the design/architecture review)
 - **Consumer no longer wedges on a handler error.** An exception in an
   `on_initiative`/channel path used to kill the Interviewer's consumer thread and

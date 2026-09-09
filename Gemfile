@@ -17,6 +17,3 @@ gem "minitest", "~> 5.16"
 gem "simplecov", require: false
 
 gem "ractor_queue"
-
-# Develop against the sibling robot_lab checkout in this project.
-gem "robot_lab", path: "../robot_lab"

@@ -13,10 +13,10 @@
 # delivers inbound bus traffic to its channel (the output half of the duplex),
 # so this demo never has to poll or render replies.
 #
-# @assistant is a real LLM robot (Ollama) that cooperates via #serve — the
-# one-call symmetric responder. @analyst and @scribe are key-free canned peers.
-# Set OLLAMA_API_BASE/OLLAMA_MODEL, or run without Ollama and just use the canned
-# peers (@assistant will simply not answer).
+# @assistant is a real LLM robot (LM Studio via :lms) that cooperates via
+# #serve — the one-call symmetric responder. @analyst and @scribe are key-free
+# canned peers. Set LMS_API_BASE/LMS_MODEL, or run without LM Studio and just
+# use the canned peers (@assistant will simply not answer).
 #
 #   ruby examples/02_terminal_mentions.rb
 #   # then type:  @analyst and @scribe: status?
@@ -31,13 +31,14 @@ core_lib = File.expand_path("../../robot_lab/lib", __dir__)
 $LOAD_PATH.unshift(core_lib) if File.directory?(core_lib)
 
 require "robot_lab"
+require "ruby_llm/providers/lms"
 require_relative "../lib/robot_lab/cyborg"
 
 Cyborg   = RobotLab::Cyborg
 Channel  = RobotLab::Cyborg::Channel
 
 RubyLLM.configure do |c|
-  c.ollama_api_base = ENV.fetch("OLLAMA_API_BASE", "http://localhost:11434/v1")
+  c.lms_api_base = ENV.fetch("LMS_API_BASE", "http://localhost:1234/v1")
   c.logger          = Logger.new(File::NULL)
 end
 RobotLab.configure { |c| c.logger = Logger.new(File::NULL) }
@@ -69,8 +70,8 @@ you = Cyborg.new(name: "you", bus: bus, channel: Channel::Terminal.new(name: "ne
 
 # A real LLM robot that serves bus tasks — the symmetric counterpart to how the
 # Cyborg answers its human. One call, no hand-wired on_message.
-RobotLab.build(name: "assistant", bus: bus, provider: "ollama",
-               model: ENV.fetch("OLLAMA_MODEL", "qwen3.6"),
+RobotLab.build(name: "assistant", bus: bus, provider: "lms",
+               model: ENV.fetch("LMS_MODEL", "openai/gpt-oss-20b"),
                system_prompt: "You are a concise teammate. Answer in 1-2 sentences.").serve
 
 # Two key-free canned peers.

@@ -14,8 +14,9 @@
 # You can answer each question, type "skip" to pass on one, or "done" to end the
 # interview early. The robot builds the profile from whatever you chose to share.
 #
-# Requires a running Ollama with the model pulled:  ollama pull qwen3.6
-# Override with OLLAMA_MODEL / OLLAMA_API_BASE if yours differ.
+# Requires a running LM Studio server with the model downloaded:
+#   lms server start && lms get openai/gpt-oss-20b
+# Override with LMS_MODEL / LMS_API_BASE if yours differ.
 #
 #   ruby examples/03_robot_interviews_cyborg.rb
 
@@ -25,20 +26,21 @@ core_lib = File.expand_path("../../robot_lab/lib", __dir__)
 $LOAD_PATH.unshift(core_lib) if File.directory?(core_lib)
 
 require "robot_lab"
+require "ruby_llm/providers/lms"
 require_relative "../lib/robot_lab/cyborg"
 
 Cyborg  = RobotLab::Cyborg
 Channel = RobotLab::Cyborg::Channel
 
-OLLAMA_API_BASE = ENV.fetch("OLLAMA_API_BASE", "http://localhost:11434/v1")
-OLLAMA_MODEL    = ENV.fetch("OLLAMA_MODEL", "qwen3.6")
+LMS_API_BASE = ENV.fetch("LMS_API_BASE", "http://localhost:1234/v1")
+LMS_MODEL    = ENV.fetch("LMS_MODEL", "openai/gpt-oss-20b")
 MAX_QUESTIONS   = Integer(ENV.fetch("MAX_QUESTIONS", "5"))
 
 ENDING_WORDS   = %w[done stop quit exit].freeze
 SKIPPING_WORDS = %w[skip pass].freeze
 
 RubyLLM.configure do |c|
-  c.ollama_api_base = OLLAMA_API_BASE
+  c.lms_api_base = LMS_API_BASE
   c.logger          = Logger.new(File::NULL)
 end
 RobotLab.configure { |c| c.logger = Logger.new(File::NULL) }
@@ -48,8 +50,8 @@ RobotLab.configure { |c| c.logger = Logger.new(File::NULL) }
 # single Interviewer ask.
 robot = RobotLab.build(
   name: "ProfileBot",
-  provider: "ollama",
-  model: OLLAMA_MODEL,
+  provider: "lms",
+  model: LMS_MODEL,
   system_prompt: <<~PROMPT
     You are ProfileBot, a warm, concise interviewer. Your goal is to learn as much
     as the person is willing to share so you can later classify them across these

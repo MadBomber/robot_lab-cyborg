@@ -112,8 +112,8 @@ A human step currently holds a thread while it waits. `ask_async` returns the pe
 Runnable demos in [`examples/`](examples) — one feature area each:
 
 - `01_human_in_the_network.rb` — a human as a pipeline step, peers messaging over a bus, shared memory (network → human). Key-free.
-- `02_terminal_mentions.rb` — a **live** human addresses peers by `@mention` via the library `Conversation` (fan-out, and no-mention broadcast); replies return on their own through the duplex. Includes a real **LLM robot** (`@assistant`, Ollama) cooperating via `serve`, plus key-free canned peers.
-- `03_robot_interviews_cyborg.rb` — the Interviewer the *other* way round: an **LLM robot** (Ollama) interviews the human via `delegate`, starting with a **typed** intake (`ask_confirm`/`ask_int`, which re-ask on bad input), then builds a categorized profile.
+- `02_terminal_mentions.rb` — a **live** human addresses peers by `@mention` via the library `Conversation` (fan-out, and no-mention broadcast); replies return on their own through the duplex. Includes a real **LLM robot** (`@assistant`, LM Studio via the :lms provider) cooperating via `serve`, plus key-free canned peers.
+- `03_robot_interviews_cyborg.rb` — the Interviewer the *other* way round: an **LLM robot** (LM Studio via the :lms provider) interviews the human via `delegate`, starting with a **typed** intake (`ask_confirm`/`ask_int`, which re-ask on bad input), then builds a categorized profile.
 - `04_presence_and_availability.rb` — routing to a peer who's actually there: `online`/`away`/`offline`, an offline human declining immediately, and a bounded-timeout escalation. Key-free.
 - `05_listening_and_duplex.rb` — always-on `listen`: the human speaks to the network **unprompted** and replies come back on the channel — both directions handled by the library. Key-free.
 
@@ -122,9 +122,9 @@ ruby examples/01_human_in_the_network.rb
 ruby examples/04_presence_and_availability.rb
 ruby examples/05_listening_and_duplex.rb
 
-# Examples 2 and 3 use a real robot on Ollama (ollama pull qwen3.6; override with
-# OLLAMA_MODEL / OLLAMA_API_BASE). In example 2 the canned peers still work
-# without it — only @assistant needs Ollama.
+# Examples 2 and 3 use a real robot on LM Studio (lms server start &&
+# lms get openai/gpt-oss-20b; override with LMS_MODEL / LMS_API_BASE). In
+# example 2 the canned peers still work without it — only @assistant needs it.
 ruby examples/02_terminal_mentions.rb        # then type: @analyst and @scribe: status?
 ruby examples/03_robot_interviews_cyborg.rb  # the robot asks you the questions
 ```

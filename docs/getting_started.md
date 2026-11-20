@@ -3,8 +3,8 @@
 ## Prerequisites
 
 - Ruby 4.0.9+ (per the gemspec's `required_ruby_version`)
-- `robot_lab` `~> 0.2`, `>= 0.2.6` — `robot_lab-cyborg` needs the `respond_to_tasks`/`serve` and shared bus-mutex additions to `RobotLab::Robot::BusMessaging` that landed at that version, and `RobotLab::Memory#current_writer=`.
-- `robot_lab` must be `require`d before `robot_lab/cyborg` (`Cyborg` includes `RobotLab::Robot::BusMessaging` and calls `RobotLab.register_extension`, both of which must already be defined).
+- `robot_lab` `~> 0.6` (per the gemspec) — `robot_lab-cyborg` needs the `respond_to_tasks`/`serve` and shared bus-mutex additions to `RobotLab::Robot::BusMessaging`, and `RobotLab::Memory#current_writer=`.
+- `require "robot_lab/cyborg"` loads `robot_lab` itself first (`Cyborg` includes `RobotLab::Robot::BusMessaging` and calls `RobotLab.register_extension`, both of which must already be defined), so the explicit `require "robot_lab"` in the snippets below is optional.
 
 ## Installation
 
@@ -89,7 +89,7 @@ dewayne.assign(to: :analyst, task: "Summarize today's error budget.")
 
 ```ruby
 dewayne.remember(:decision, "ship it")   # visible to every member
-dewayne.recall(:sentiment, wait: 30)     # block until a robot writes it
+dewayne.recall(:sentiment, wait: 30)     # block up to 30s until a robot writes it (then RobotLab::AwaitTimeout)
 ```
 
 Inside a network run, `remember`/`recall` target the network's shared memory automatically (`attach_memory` is called for you); outside a network, they fall back to the peer's own standalone `memory:`.
@@ -122,8 +122,8 @@ The gem ships five runnable demos, one feature area each — see the [examples/]
 | Example | Demonstrates | Needs a live human? | Needs an LLM? |
 |---|---|---|---|
 | `01_human_in_the_network.rb` | Pipeline step, bus messaging between two humans, shared memory | No (scripted) | No |
-| `02_terminal_mentions.rb` | Live `@mention` addressing via `Conversation`, a real Ollama robot cooperating via `#serve` | Yes | Optional (canned peers work without it) |
-| `03_robot_interviews_cyborg.rb` | The interview run the *other* way — an LLM robot interviews the human via `delegate`, typed intake (`ask_confirm`/`ask_int`) | Yes | Yes (Ollama) |
+| `02_terminal_mentions.rb` | Live `@mention` addressing via `Conversation`, a real LM Studio robot (`:lms` provider) cooperating via `#serve` | Yes | Optional (canned peers work without it) |
+| `03_robot_interviews_cyborg.rb` | The interview run the *other* way — an LLM robot interviews the human via `delegate`, typed intake (`ask_confirm`/`ask_int`) | Yes | Yes (LM Studio) |
 | `04_presence_and_availability.rb` | `online!`/`away!`/`offline!`, an offline human declining immediately, bounded-timeout escalation | No (scripted) | No |
 | `05_listening_and_duplex.rb` | Always-on `listen`: the human speaks unprompted, replies come back on the channel | No (scripted) | No |
 
@@ -132,9 +132,9 @@ ruby examples/01_human_in_the_network.rb
 ruby examples/04_presence_and_availability.rb
 ruby examples/05_listening_and_duplex.rb
 
-# Examples 2 and 3 use a real robot on Ollama (ollama pull qwen3.6; override with
-# OLLAMA_MODEL / OLLAMA_API_BASE). In example 2 the canned peers still work
-# without it — only @assistant needs Ollama.
+# Examples 2 and 3 use a real robot on LM Studio (lms server start &&
+# lms get openai/gpt-oss-20b; override with LMS_MODEL / LMS_API_BASE). In
+# example 2 the canned peers still work without it — only @assistant needs it.
 ruby examples/02_terminal_mentions.rb        # then type: @analyst and @scribe: status?
 ruby examples/03_robot_interviews_cyborg.rb  # the robot asks you the questions
 ```
@@ -150,7 +150,7 @@ bin/console                  # IRB with the gem loaded
 
 ## Key Constraints
 
-- `robot_lab` must be `require`d before `robot_lab/cyborg` — see Prerequisites above.
+- `robot_lab/cyborg` requires `robot_lab` itself — see Prerequisites above.
 - `$stdin`/`$stdout` are only ever touched inside `Channel::Terminal`; every other part of the gem is transport-agnostic.
 - A human step holds a thread while it waits for an answer (`ask`/`ask_and_wait` block the calling thread; `ask_async` does not — see [How It Works](how_it_works.md#asking-asynchronously)). There is currently no way to persist a pending question across a process restart — see the [Durable Human Steps](how_it_works.md#roadmap-durable-human-steps) roadmap note.
 - Calling `on_message`, `respond_to_tasks`, or `serve` (all inherited from `BusMessaging`) on a `Cyborg` replaces its built-in inbound-task handling — see [How It Works](how_it_works.md#network-member-and-bus-contracts).

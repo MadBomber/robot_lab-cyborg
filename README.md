@@ -61,7 +61,7 @@ dewayne.assign(to: :analyst, task: "Summarize today's error budget.")
 
 ```ruby
 dewayne.remember(:decision, "ship it")   # visible to every member
-dewayne.recall(:sentiment, wait: 30)     # block until a robot writes it
+dewayne.recall(:sentiment, wait: 30)     # block up to 30s until a robot writes it (then RobotLab::AwaitTimeout)
 ```
 
 ### Channels and the Interviewer
@@ -69,7 +69,7 @@ dewayne.recall(:sentiment, wait: 30)     # block until a robot writes it
 Reaching the human is split into two concerns:
 
 - A **`Channel`** is the *means* — a dumb bidirectional pipe with two jobs: `deliver` a message **out** to the human, and surface messages the human sends **in**. It knows nothing about questions or answers. This is the injection point; `$stdin`/`$stdout` live only inside `Channel::Terminal`.
-- An **`Interviewer`** is the *process* — it conducts the interaction over whatever channel is injected. Asking is **always asynchronous**: the human's answer may be the next inbound message, a later one, or never. So `ask` delivers the question and returns a `Question` you can wait on with a timeout; a background consumer matches answers to questions (by the channel's correlation id when it has one, else oldest-first) and routes anything unsolicited as human *initiative*.
+- An **`Interviewer`** is the *process* — it conducts the interaction over whatever channel is injected. Asking is **always asynchronous**: the human's answer may be the next inbound message, a later one, or never. So `ask` delivers the question and returns a `Question` you can wait on with a timeout; a background consumer matches answers to questions (by the channel's correlation id when it has one, else to the one question currently on the wire) and routes anything unsolicited as human *initiative*.
 
 Built-in channels:
 

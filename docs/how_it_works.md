@@ -34,7 +34,7 @@ ChannelMessage = Data.define(:id, :content, :in_reply_to, :sender, :kind, :at)
 
 - `input:`/`output:` are injectable (default `$stdin`/`$stdout`); inject `StringIO` in tests.
 - `deliver` is synchronized with a `Mutex` so a question and an inbound peer message never interleave on screen.
-- `receive(timeout:)` uses `IO.wait_readable` on a real IO so timeouts, shutdown, and question expiry all work; a non-selectable stream (a `StringIO` in tests) returns immediately from `#gets`, which is equally responsive.
+- `receive(timeout:)` uses `IO#wait_readable` on a real IO so timeouts, shutdown, and question expiry all work; a non-selectable stream (a `StringIO` in tests) returns immediately from `#gets`, which is equally responsive.
 - A `nil` line from `#gets` (EOF) is treated as "nothing arrived" and propagates as `nil`.
 - `correlates?` is `false` — a bare terminal carries no correlation, so `in_reply_to` always stays `nil` on what it produces.
 
@@ -102,7 +102,7 @@ Before resolving a `Question`, the `Interviewer` runs the raw text through `inte
 `Cyborg` satisfies the same two contracts a `Robot` does, so a network (or another peer) never has to know which one it's talking to:
 
 - **The `SimpleFlow` step contract** — `#call(result)`. The network invokes this when a pipeline reaches the human's task; `Cyborg` extracts the incoming message and shared memory from the pipeline `Result` (`extract_run_context`), calls its own `#run`, and threads a `RobotResult` back into the pipeline the same way a robot's step would (`result.with_context(name, robot_result).continue(robot_result)`). Any exception is caught and turned into an error-shaped `RobotResult` rather than raising through the pipeline.
-- **The `#run` contract** — `run(message = nil, network_memory: nil, memory: nil, **)`. This is what makes a `Cyborg` a valid `delegate`/`spawn` target anywhere a `Robot` is: it asks the human the given message (via `#ask`) and wraps the answer in a `RobotResult`, so `result.reply` works identically regardless of which kind of peer produced it.
+- **The `#run` contract** — `run(message = nil, network_memory: nil, memory: nil, **)`. This is what makes a `Cyborg` a valid `delegate`/pipeline target anywhere a `Robot` is: it asks the human the given message (via `#ask`) and wraps the answer in a `RobotResult`, so `result.reply` works identically regardless of which kind of peer produced it.
 
 `Cyborg` also **includes `RobotLab::Robot::BusMessaging` verbatim** — the same module `Robot` uses for `send_message`/`send_reply`/`on_message`/`spawn`/bus-poller wiring. This is why a robot and a human are wire-compatible peers on the same `TypedBus`: there is only one implementation of "how a member talks on the bus," shared by both.
 
@@ -110,7 +110,7 @@ Before resolving a `Question`, the `Interviewer` runs the raw text through `inte
 
 ### The Inbound Task Lifecycle
 
-`handle_incoming(message)` — the private method wired as `@message_handler` — is what runs on the bus poller's drain thread for every message addressed to this peer:
+`handle_incoming(message)` — the private method wired as `@message_handler` — is what runs for every message addressed to this peer. Core's `BusPoller` has no thread of its own: it serializes deliveries per member and runs the handler inline, in the *sender's* execution context:
 
 1. The message is recorded in `#inbox` (thread-safe, for later inspection).
 2. If it's a **reply** to something this peer sent earlier, it's shown to the human via the channel (`kind: :message`) and handling stops there — replies don't get re-asked as tasks.
@@ -127,7 +127,7 @@ This is the fix for a real deadlock: before it, an inbound task ran synchronousl
 
 Two directions, both automatic in the common case:
 
-- **Network → human**: any inbound bus message or reply is shown on the channel via `deliver_to_human`, best-effort (a channel error here is swallowed — a broken display must never break message intake). Call `Cyborg#tell(text, kind: :notice)` yourself to push an unprompted line (a status update, a warning) the same way.
+- **Network → human**: an inbound bus *reply* is shown on the channel via `deliver_to_human`, best-effort (a channel error here is swallowed — a broken display must never break message intake); an inbound *task* reaches the human as the question `"<sender> asks: ..."`. Call `Cyborg#tell(text, kind: :notice)` yourself to push an unprompted line (a status update, a warning) the same way.
 - **Human → network**: an inbound channel message that answers no outstanding question is *initiative* — the human speaking unprompted. `Interviewer#on_initiative` routes it to `Cyborg#handle_human_initiative`, which in turn calls the `#on_human` callback you register. `Conversation` (below) is the built-in way to turn that initiative into addressed bus tasks; you can also register `#on_human` directly for custom routing.
 
 ### Always-On Listening
@@ -173,14 +173,14 @@ future.value            # blocks here instead; raises DelegationFuture::Delegati
 
 ```ruby
 cyborg.remember(:decision, "ship it")       # writes to the active memory
-cyborg.recall(:sentiment, wait: 30)         # reads from it, optionally blocking for up to 30s
+cyborg.recall(:sentiment, wait: 30)         # reads from it, blocking up to 30s (then raises RobotLab::AwaitTimeout)
 cyborg.attach_memory(some_network_memory)   # explicit target (a network run does this for you)
 cyborg.detach_memory                        # back to this peer's own standalone memory
 ```
 
 "The active memory" is the network's shared memory while attached, and this peer's own standalone `memory:` otherwise (`current_memory`, mutex-guarded). `#run` calls `attach_memory` automatically whenever a `network_memory:` is passed in — which is how a network run wires it up without you doing so by hand. Detaching explicitly matters when a peer might otherwise keep writing to a finished network's memory after that run has ended.
 
-`remember`/`recall` additionally set/restore the memory's `current_writer` around the call (`with_writer`, a no-op for memory implementations that don't track one) — a no-op for memories that don't track a writer, and otherwise how downstream consumers know a given memory write came from this human rather than a robot.
+`remember` additionally sets/restores the memory's `current_writer` around the write (`with_writer`, a no-op for memory implementations that don't track one) — which is how downstream consumers know a given memory write came from this human rather than a robot. `#run` does the same for the whole time the human is being asked. `recall` is a plain read and leaves `current_writer` alone.
 
 ## Conversation: Multi-Peer Chat by @mention
 

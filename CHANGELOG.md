@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`Cyborg#spawn` no longer raises `NameError`.** The shared `BusMessaging#spawn`
+  copies the spawner's model/provider onto the new robot, and a human has neither.
+  `Cyborg#inherited_llm_settings` now returns `{}`, so a spawned robot runs on the
+  settings passed to `spawn` (`model:`, `provider:`, ...) or RobotLab's defaults.
+- **`Cyborg#remember` attributes its write.** The memory's `current_writer` is set
+  to the peer's name around the write and restored afterward, so subscribers see
+  who wrote the key (it was `nil` outside a `run`).
+- Corrected comments and docs that described a bus poller "drain thread" (core's
+  `BusPoller` runs handlers inline in the sender's context), the `Cyborg::Error`
+  comment (nothing raises it; bus misuse raises `RobotLab::BusError`), and the
+  example 3 header (LM Studio, not Ollama).
+
 ## [0.6.1] - 2026-11-19
 
 ### Changed
@@ -101,5 +114,7 @@ Released in lockstep with `robot_lab` core v0.2.8: this gem now resolves the rel
 - Minitest suite covering the interviewers, the network-member contract and shared
   memory, the bus task/reply round-trip, and delegation.
 
-[Unreleased]: https://github.com/MadBomber/robot_lab-cyborg/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/MadBomber/robot_lab-cyborg/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/MadBomber/robot_lab-cyborg/compare/v0.3.0...v0.6.1
+[0.2.8]: https://github.com/MadBomber/robot_lab-cyborg/releases/tag/v0.2.8
 [0.1.0]: https://github.com/MadBomber/robot_lab-cyborg/releases/tag/v0.1.0

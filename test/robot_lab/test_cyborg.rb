@@ -52,5 +52,70 @@ module RobotLab
       cyborg.remember(:decision, "ship it")
       assert_equal "ship it", cyborg.recall(:decision)
     end
+
+    # --- spawn: a human has no model/provider for a spawned robot to inherit ---
+
+    def test_inherited_llm_settings_is_empty
+      cyborg = RobotLab::Cyborg.new(name: "dewayne", channel: Scripted.new)
+      assert_empty cyborg.inherited_llm_settings
+    end
+
+    def test_spawn_builds_a_robot_on_the_shared_bus_with_the_callers_llm_settings
+      cyborg = RobotLab::Cyborg.new(name: "dewayne", channel: Scripted.new)
+      robot  = cyborg.spawn(name: "helper", system_prompt: "Be brief.", model: "gpt-4o-mini", provider: "openai")
+
+      assert_instance_of RobotLab::Robot, robot
+      assert_equal "helper", robot.name
+      assert_equal "gpt-4o-mini", robot.model
+      assert_equal "openai", robot.provider
+      refute_nil cyborg.bus
+      assert_same cyborg.bus, robot.bus
+    end
+
+    def test_spawn_without_llm_settings_falls_back_to_the_configured_defaults
+      bus    = TypedBus::MessageBus.new
+      cyborg = RobotLab::Cyborg.new(name: "dewayne", bus: bus, channel: Scripted.new)
+      robot  = cyborg.spawn(name: "helper", system_prompt: "Be brief.")
+
+      assert_instance_of RobotLab::Robot, robot
+      assert_same bus, robot.bus
+    end
+
+    # --- remember attributes the write to this peer ----------------------------
+
+    def test_remember_attributes_the_write_to_this_peer
+      memory  = RobotLab::Memory.new
+      writers = []
+      memory.subscribe(:decision) { |change| writers << change.writer }
+      cyborg = RobotLab::Cyborg.new(name: "dewayne", channel: Scripted.new, memory: memory)
+
+      assert_equal "ship it", cyborg.remember(:decision, "ship it")
+
+      wait_until { writers.any? }
+      assert_equal ["dewayne"], writers
+    end
+
+    def test_remember_restores_the_previous_writer
+      memory = RobotLab::Memory.new
+      memory.current_writer = "someone_else"
+      cyborg = RobotLab::Cyborg.new(name: "dewayne", channel: Scripted.new, memory: memory)
+
+      cyborg.remember(:decision, "ship it")
+
+      assert_equal "someone_else", memory.current_writer
+    end
+
+    def test_remember_attributes_writes_to_an_attached_shared_memory
+      shared  = RobotLab::Memory.new
+      writers = []
+      shared.subscribe(:decision) { |change| writers << change.writer }
+      cyborg = RobotLab::Cyborg.new(name: "dewayne", channel: Scripted.new).attach_memory(shared)
+
+      cyborg.remember(:decision, "ship it")
+
+      wait_until { writers.any? }
+      assert_equal ["dewayne"], writers
+      assert_nil shared.current_writer
+    end
   end
 end

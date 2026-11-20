@@ -31,7 +31,7 @@ end
 
 ## `#receive` Must Honor `timeout:`
 
-This is the one requirement that's easy to get wrong. The `Interviewer`'s background consumer calls `channel.receive(timeout: 0.05)` in a tight loop (`Interviewer::POLL_INTERVAL`), and relies on that call actually returning within roughly that window — every 50ms — so it can notice `Question` timeouts, respond to `#close`, and stay responsive. A `#receive` that blocks indefinitely regardless of `timeout:` will make questions never expire and `#close` hang.
+This is the one requirement that's easy to get wrong. The `Interviewer`'s background consumer calls `channel.receive(timeout: 0.05)` in a tight loop (`Interviewer::POLL_INTERVAL`), and relies on that call actually returning within roughly that window — every 50ms — so it can notice `#close` and `#unlisten`, wind itself down once nothing is outstanding, and stay responsive. A `#receive` that blocks indefinitely regardless of `timeout:` leaves the consumer thread parked inside it: `Interviewer#close` waits a second for it and then gives up, leaving the thread behind, and `#unlisten` never takes effect. (`Question#answer(timeout:)` still expires — it waits on the question's own mailbox, not on the channel.)
 
 For a polling-style transport (an HTTP API you poll, a database table), implement this literally: poll, and if nothing new has arrived within `timeout` seconds, return `nil`. For a push-style transport (a webhook, a queue with blocking pop), buffer inbound messages into a `Thread::Queue` from your webhook handler and let `receive` do `@inbox.pop(timeout: timeout)` — exactly what `Channel::Scripted` and the `Autobot` example below do.
 
@@ -39,9 +39,11 @@ For a polling-style transport (an HTTP API you poll, a database table), implemen
 
 Whether `correlates?` should be `true` or `false` depends on whether your transport can tie an inbound answer back to the specific question it answers:
 
-- **Slack threads** — reply in the same thread as the question; the thread's parent message id becomes `in_reply_to`. `correlates? = true`.
+- **Slack threads** — reply in the same thread as the question; the thread's parent message identifies the question. `correlates? = true`.
 - **Email** — the `In-Reply-To` header names the message id being answered. `correlates? = true`.
 - **A bare terminal, or an SMS number with no threading** — there's no way to tell which question an inbound text answers except "whichever one is outstanding." `correlates? = false` — the `Interviewer` will serialize (one question on the wire at a time) so an answer is never mis-attributed. See [How It Works — Correlation vs. Serialization](how_it_works.md#correlation-vs-serialization).
+
+Whatever the transport's own ids look like, the inbound `ChannelMessage#in_reply_to` must equal the `id` of the question `ChannelMessage` you were handed in `#deliver` (an `Integer` assigned by the `Interviewer`) — so a correlating channel keeps a map from its transport's id (a Slack `ts`, an email `Message-Id`) back to that question id. An `in_reply_to` that names no outstanding question is treated as unprompted initiative, not as an answer.
 
 Get this wrong in the `true` direction (claiming correlation your transport doesn't actually have) and answers can resolve the wrong question when more than one is outstanding. Getting it wrong in the `false` direction just costs you unnecessary serialization — safe, but limits concurrent questions on a channel that could actually support them.
 
@@ -85,15 +87,19 @@ class SlackChannel < RobotLab::Cyborg::Channel
     @slack   = slack_client
     @channel_id = channel_id
     @inbox   = Thread::Queue.new
+    @threads = {}            # Slack ts of a posted question => that question's id
+    @mutex   = Mutex.new
     super()
   end
 
   def correlates? = true
 
   def deliver(message)
-    response = @slack.chat_postMessage(channel: @channel_id, text: message.content,
-                                        thread_ts: message.in_reply_to)
-    message   # or a copy carrying response["ts"] if you need the posted id later
+    response = @slack.chat_postMessage(channel: @channel_id, text: message.content)
+    # Remember which Slack message carries which question, so a thread reply
+    # can be stamped with the question id the Interviewer is waiting on.
+    @mutex.synchronize { @threads[response["ts"]] = message.id } if message.question?
+    message
   end
 
   def receive(timeout: nil)
@@ -109,7 +115,7 @@ class SlackChannel < RobotLab::Cyborg::Channel
   def handle_slack_event(event)
     @inbox.push(RobotLab::Cyborg::ChannelMessage.new(
       content: event["text"],
-      in_reply_to: event["thread_ts"],   # nil for a top-level message
+      in_reply_to: @mutex.synchronize { @threads[event["thread_ts"]] },   # question id; nil for a top-level message
       sender: event["user"]
     ))
   end

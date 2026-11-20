@@ -39,15 +39,15 @@ A `Cyborg` reuses `RobotLab::Robot::BusMessaging` verbatim, so its bus behavior 
 | **Presence** | `online!` / `away!` / `offline!` / `available?` |
 | **Multi-peer chat** | `Conversation` — `@mention` addressing, no-mention broadcast |
 | **Typed answers** | `ask`, `ask_int`, `ask_confirm`, `ask(validate:, retries:)` |
-| **Dependency** | `robot_lab ~> 0.2, >= 0.2.6` |
+| **Dependency** | `robot_lab ~> 0.6` |
 
 ## Why a Cyborg, Not Just a Human-Shaped Robot?
 
 A `Robot` is built around an LLM chat: model, provider, tokens, a `ruby_llm` chat object. None of that applies to a human. Rather than force a human through `Robot`'s LLM-shaped constructor and stub out everything that doesn't apply, `Cyborg` is a separate, smaller class that:
 
-- Includes only the one piece of `Robot` it genuinely needs and shares byte-for-byte — `BusMessaging` (send/receive over `TypedBus`, spawn, bus poller wiring).
+- Includes only the one piece of `Robot` it genuinely needs and shares byte-for-byte — `BusMessaging` (send/receive over `TypedBus`, spawn, bus poller wiring). `spawn` builds a `Robot` on the Cyborg's bus; since a human has no model or provider for it to inherit, pass `model:`/`provider:` to `spawn` or the new robot uses RobotLab's configured defaults.
 - Replaces "call the model" with "ask a human," via an injectable `Channel` + `Interviewer` pair instead of a `ruby_llm` chat.
-- Still satisfies the same *network member* contract (`call`/`run`) so it is a drop-in peer anywhere a `Robot` is expected — a pipeline `task`, a `delegate` target, a `spawn`-style bus peer.
+- Still satisfies the same *network member* contract (`call`/`run`) so it is a drop-in peer anywhere a `Robot` is expected — a pipeline `task`, a `delegate` target, a bus peer.
 
 ## Links
 

@@ -44,7 +44,9 @@ module RobotLab
   class Cyborg
     include RobotLab::Robot::BusMessaging
 
-    # Raised for Cyborg-specific misuse (e.g. issuing a bus task with no bus).
+    # Reserved for Cyborg-specific misuse. Nothing in this gem raises it yet:
+    # bus misuse (e.g. issuing a bus task with no bus) raises core's
+    # RobotLab::BusError, from the shared BusMessaging mixin.
     class Error < StandardError; end
 
     # @return [String] the peer's unique name — also its bus channel name
@@ -352,16 +354,28 @@ module RobotLab
       end
     end
 
+    # LLM settings a robot spawned by this peer inherits: none. BusMessaging#spawn
+    # copies the spawner's model/provider onto the new robot, but a human has
+    # neither — so a robot spawned by a Cyborg runs on whatever the caller passes
+    # to +spawn+ (+model:+, +provider:+, ...) or, failing that, on RobotLab's
+    # configured defaults, exactly as with RobotLab.build.
+    #
+    # @return [Hash] always empty
+    def inherited_llm_settings = {}
+
     # --- Shared memory --------------------------------------------------------
 
     # Write to the active memory (the network's shared memory when in a network,
-    # otherwise this peer's own memory). Other members see it immediately.
+    # otherwise this peer's own memory). Other members see it immediately, and
+    # the write is attributed to this peer (the memory's current writer is set to
+    # this peer's name around the write, then restored).
     #
     # @param key [Object]
     # @param value [Object]
     # @return [Object] value
     def remember(key, value)
-      current_memory.set(key, value)
+      target = current_memory
+      with_writer(target) { target.set(key, value) }
       value
     end
 
@@ -439,10 +453,12 @@ module RobotLab
       memory.current_writer = previous if memory.respond_to?(:current_writer=)
     end
 
-    # Route an inbound bus delivery (runs on the bus poller drain thread; arity-1
-    # handler => the poller auto-acks). A reply is shown to the human as a peer
+    # Route an inbound bus delivery. Core's BusPoller has no thread of its own:
+    # this runs inline in the *sender's* execution context (arity-1 handler =>
+    # the delivery is auto-acked first). A reply is shown to the human as a peer
     # message. A fresh task is surfaced to the human *and answered off this thread*
-    # (see {#respond_to_task}) so a slow or absent human never blocks bus intake.
+    # (see {#respond_to_task}) so a slow or absent human never blocks the sender
+    # or bus intake.
     def handle_incoming(message)
       @inbox_mutex.synchronize { @inbox << message }
       deliver_to_human(message, kind: :message) if message.reply?
@@ -451,7 +467,7 @@ module RobotLab
       respond_to_task(message)
     end
 
-    # Answer an inbound task on its own thread. The poller returns immediately;
+    # Answer an inbound task on its own thread. The delivery returns immediately;
     # the human's answer (bounded by ask_timeout) is replied when it arrives. An
     # offline human declines right away rather than leaving the sender hanging.
     def respond_to_task(message)

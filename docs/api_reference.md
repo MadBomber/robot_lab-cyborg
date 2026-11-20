@@ -35,6 +35,8 @@ dewayne = RobotLab::Cyborg.new(name: "dewayne", bus: bus, ask_timeout: 30)
 | `memory` | `RobotLab::Memory` | this peer's own standalone memory |
 | `presence` | `Symbol` | `:online`, `:away`, or `:offline` |
 
+`RobotLab::Cyborg::VERSION` (`String`) is the gem version.
+
 ### Network Member Interface
 
 #### `call(result) → SimpleFlow::Result`
@@ -43,7 +45,7 @@ The `SimpleFlow` step contract — invoked by the network when a pipeline reache
 
 #### `run(message = nil, network_memory: nil, memory: nil, **) → RobotResult`
 
-Asks the human `message` and wraps the answer in a `RobotResult` — the contract that makes a `Cyborg` a valid `delegate`/pipeline target anywhere a `Robot` is. Attaches `network_memory` automatically when given.
+Asks the human `message` and wraps the answer in a `RobotResult` — the contract that makes a `Cyborg` a valid `delegate`/pipeline target anywhere a `Robot` is. Attaches `network_memory` automatically when given, and sets the active memory's `current_writer` to this peer's name for the duration of the ask.
 
 ### Asking the Human
 
@@ -119,7 +121,7 @@ Sets presence to `:offline` — inbound bus tasks are declined immediately inste
 
 #### `assign(to:, task:) → RobotMessage`
 
-Fire-and-forget bus send — alias for `BusMessaging#send_message`. Correlate any reply later via `outbox[message.key]`.
+Fire-and-forget bus send — alias for `BusMessaging#send_message`. Correlate any reply later via `outbox[message.key]`. Raises `RobotLab::BusError` when the peer has no bus.
 
 #### `delegate(to:, task:, async: false, **) → RobotResult, DelegationFuture`
 
@@ -129,11 +131,11 @@ Fire-and-forget bus send — alias for `BusMessaging#send_message`. Correlate an
 
 #### `remember(key, value) → value`
 
-Writes to the active memory (network shared memory when attached, else this peer's own).
+Writes to the active memory (network shared memory when attached, else this peer's own). The write is attributed to this peer: the memory's `current_writer` is set to the peer's name around the write and restored afterward.
 
 #### `recall(key, wait: false) → Object, nil`
 
-Reads from the active memory. `wait:` may be `false`, `true` (block indefinitely), or a `Numeric` numbers of seconds.
+Reads from the active memory. `wait:` may be `false`, `true` (block indefinitely), or a `Numeric` number of seconds — when that expires before the key is written, `RobotLab::AwaitTimeout` is raised (it does not return `nil`).
 
 #### `attach_memory(mem) → self`
 
@@ -151,17 +153,25 @@ Inbound bus messages received so far, oldest first (a defensive copy).
 
 #### `to_h → Hash`
 
-`{name:, kind: :cyborg, bus: true|nil, channel: "Channel::ClassName"}.compact`
+`{name:, kind: :cyborg, bus: true|nil, channel: channel.class.name}.compact` — `channel` is the full class name, e.g. `"RobotLab::Cyborg::Channel::Terminal"`; `bus` is omitted when there is none.
 
 ### Bus Methods (via `RobotLab::Robot::BusMessaging`)
 
-`Cyborg` includes `RobotLab::Robot::BusMessaging` verbatim, gaining `send_message`, `send_reply`, `spawn`, `with_bus`, and `assign_bus_poller`. **Do not call `on_message`, `respond_to_tasks`, or `serve` on a `Cyborg`** — all three replace the inbound message handler wholesale, which disables the built-in ask/auto-reply flow. See [How It Works](how_it_works.md#network-member-and-bus-contracts).
+`Cyborg` includes `RobotLab::Robot::BusMessaging` verbatim, gaining `send_message`, `send_reply`, `spawn`, `with_bus`, and `assign_bus_poller`.
+
+`spawn(name: "robot", system_prompt: nil, template: nil, local_tools: [], **) → Robot` builds a new `Robot` on this peer's bus (creating a bus first if the peer has none). A `Robot` hands its own model and provider to the robots it spawns; a `Cyborg` has neither, so `Cyborg#inherited_llm_settings` returns `{}` and the spawned robot runs on whatever you pass through (`model:`, `provider:`, or any other `RobotLab.build` option) or, failing that, on RobotLab's configured defaults:
+
+```ruby
+helper = dewayne.spawn(name: "helper", system_prompt: "Be brief.", model: "gpt-4o-mini", provider: "openai")
+```
+
+**Do not call `on_message`, `respond_to_tasks`, or `serve` on a `Cyborg`** — all three replace the inbound message handler wholesale, which disables the built-in ask/auto-reply flow. See [How It Works](how_it_works.md#network-member-and-bus-contracts).
 
 ### Errors
 
 #### `Cyborg::Error`
 
-Raised for `Cyborg`-specific misuse. Not currently raised by any code path in this gem's own methods — reserved for future use and for extensions built on top of `Cyborg`.
+Raised for `Cyborg`-specific misuse (`class Error < StandardError`). Not currently raised by any code path in this gem's own methods — reserved for future use and for extensions built on top of `Cyborg`. Bus misuse (e.g. `assign`/`send_message` with no bus) raises core's `RobotLab::BusError` instead.
 
 ---
 
@@ -207,6 +217,8 @@ Constructed as `ChannelMessage.new(content:, id: nil, in_reply_to: nil, sender: 
 
 The process that conducts a human interaction over an injected `Channel`. See [How It Works](how_it_works.md#asking-asynchronously) for the full asking/correlation/timeout model.
 
+`Interviewer::POLL_INTERVAL` (`0.05`) is how often, in seconds, the background consumer polls the channel.
+
 #### `new(channel:, default_timeout: nil)`
 
 #### `ask(content, choices: nil, default: nil) → Question`
@@ -250,6 +262,10 @@ A pending question handed to the human; a one-shot future for its answer.
 | `choices` | `Array<String>`, `nil` | multiple-choice options, if any |
 | `default` | `String`, `nil` | value used on an empty answer or a timeout |
 
+#### `new(id:, content:, choices: nil, default: nil, interviewer: nil)`
+
+Built by `Interviewer#ask` — not normally constructed directly.
+
 #### `answer(timeout: nil) → String, nil`
 
 Blocks up to `timeout` seconds for the human's (already-interpreted) answer. On timeout, expires the question via its `Interviewer` and returns `default` (`nil` if none).
@@ -263,6 +279,8 @@ Delivers the answer — called by the `Interviewer`'s consumer, not normally cal
 ## `RobotLab::Cyborg::Conversation`
 
 Turns a listening `Cyborg` into a multi-peer, `@mention`-addressed chat participant. See [How It Works](how_it_works.md#conversation-multi-peer-chat-by-mention).
+
+`Conversation::MENTION` (`/@(\w+)/`) is the pattern that finds every `@name` in a line.
 
 #### `new(cyborg:, peers: [])`
 
@@ -297,5 +315,5 @@ Used throughout this gem's public API but defined in core `robot_lab` — see th
 | `RobotLab::RobotResult` | what `Cyborg#run`/`#call` return; `#reply` is the human's answer text |
 | `RobotLab::DelegationFuture` | returned by `delegate(async: true)`; `DelegationFuture::DelegationTimeout` on a `value(timeout:)` expiry |
 | `RobotLab::Robot::BusMessaging` | mixed into `Cyborg` for bus send/receive; see the caveat above about `on_message`/`respond_to_tasks`/`serve` |
-| `RobotLab::Memory` | `remember`/`recall`'s backing store; `#current_writer=` is what `with_writer` toggles around a memory write |
+| `RobotLab::Memory` | `remember`/`recall`'s backing store; `#current_writer=` is what `#remember` sets around a write, and `#run` sets while the human is being asked (both via the private `with_writer`) |
 | `RobotLab::RobotMessage` | the bus message type `assign`/`send_message` produce and `#inbox` holds |

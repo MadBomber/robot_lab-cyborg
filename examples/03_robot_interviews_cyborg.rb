@@ -4,7 +4,7 @@
 # A robot interviews a cyborg (the Interviewer, the other way round).
 #
 # Examples 1 and 2 had the human drive. Here the *robot* drives: an LLM-backed
-# RobotLab robot (ProfileBot, on a local Ollama model) conducts an interview to
+# RobotLab robot (ProfileBot, on a local LM Studio model) conducts an interview to
 # learn as much as the human is willing to share, then classifies them across
 # several categories. Each question the robot invents is delegated to the Cyborg,
 # whose Interviewer conducts it on the terminal and hands the answer back — so

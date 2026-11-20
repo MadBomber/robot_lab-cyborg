@@ -1182,6 +1182,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#newid-content-choices-nil-default-nil-interviewer-nil" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        new(id:, content:, choices: nil, default: nil, interviewer: nil)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#answertimeout-nil-string-nil" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2028,6 +2039,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#newid-content-choices-nil-default-nil-interviewer-nil" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        new(id:, content:, choices: nil, default: nil, interviewer: nil)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#answertimeout-nil-string-nil" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2298,11 +2320,12 @@
 </tr>
 </tbody>
 </table>
+<p><code>RobotLab::Cyborg::VERSION</code> (<code>String</code>) is the gem version.</p>
 <h3 id="network-member-interface">Network Member Interface<a class="headerlink" href="#network-member-interface" title="Permanent link">&para;</a></h3>
 <h4 id="callresult-simpleflowresult"><code>call(result) → SimpleFlow::Result</code><a class="headerlink" href="#callresult-simpleflowresult" title="Permanent link">&para;</a></h4>
 <p>The <code>SimpleFlow</code> step contract — invoked by the network when a pipeline reaches this peer's task. Extracts the message and shared memory from <code>result</code>, calls <code>#run</code>, and threads the resulting <code>RobotResult</code> back into the pipeline. Exceptions are caught and turned into an error-shaped <code>RobotResult</code> rather than raised.</p>
 <h4 id="runmessage-nil-network_memory-nil-memory-nil-robotresult"><code>run(message = nil, network_memory: nil, memory: nil, **) → RobotResult</code><a class="headerlink" href="#runmessage-nil-network_memory-nil-memory-nil-robotresult" title="Permanent link">&para;</a></h4>
-<p>Asks the human <code>message</code> and wraps the answer in a <code>RobotResult</code> — the contract that makes a <code>Cyborg</code> a valid <code>delegate</code>/pipeline target anywhere a <code>Robot</code> is. Attaches <code>network_memory</code> automatically when given.</p>
+<p>Asks the human <code>message</code> and wraps the answer in a <code>RobotResult</code> — the contract that makes a <code>Cyborg</code> a valid <code>delegate</code>/pipeline target anywhere a <code>Robot</code> is. Attaches <code>network_memory</code> automatically when given, and sets the active memory's <code>current_writer</code> to this peer's name for the duration of the ask.</p>
 <h3 id="asking-the-human">Asking the Human<a class="headerlink" href="#asking-the-human" title="Permanent link">&para;</a></h3>
 <h4 id="askquestion-choices-nil-default-nil-timeout-ask_timeout-validate-nil-retries-2-object-nil"><code>ask(question, choices: nil, default: nil, timeout: @ask_timeout, validate: nil, retries: 2) → Object, nil</code><a class="headerlink" href="#askquestion-choices-nil-default-nil-timeout-ask_timeout-validate-nil-retries-2-object-nil" title="Permanent link">&para;</a></h4>
 <p>Blocks for the human's answer (or <code>default</code>/<code>nil</code> on timeout). <code>validate:</code> is called with the raw answer; return a coerced value to accept it, or <code>nil</code> to reject and re-ask (up to <code>retries</code> extra attempts, then fall back to <code>default</code>).</p>
@@ -2341,14 +2364,14 @@
 <p>Sets presence to <code>:offline</code> — inbound bus tasks are declined immediately instead of waiting on an absent human.</p>
 <h3 id="issuing-work-to-other-members">Issuing Work to Other Members<a class="headerlink" href="#issuing-work-to-other-members" title="Permanent link">&para;</a></h3>
 <h4 id="assignto-task-robotmessage"><code>assign(to:, task:) → RobotMessage</code><a class="headerlink" href="#assignto-task-robotmessage" title="Permanent link">&para;</a></h4>
-<p>Fire-and-forget bus send — alias for <code>BusMessaging#send_message</code>. Correlate any reply later via <code>outbox[message.key]</code>.</p>
+<p>Fire-and-forget bus send — alias for <code>BusMessaging#send_message</code>. Correlate any reply later via <code>outbox[message.key]</code>. Raises <code>RobotLab::BusError</code> when the peer has no bus.</p>
 <h4 id="delegateto-task-async-false-robotresult-delegationfuture"><code>delegate(to:, task:, async: false, **) → RobotResult, DelegationFuture</code><a class="headerlink" href="#delegateto-task-async-false-robotresult-delegationfuture" title="Permanent link">&para;</a></h4>
 <p><code>to</code> may be a <code>Robot</code> or another <code>Cyborg</code> — anything responding to <code>#run</code>. Synchronous by default (blocks, returns a <code>RobotResult</code> stamped with <code>delegated_by</code>); <code>async: true</code> spawns a thread and returns a <code>RobotLab::DelegationFuture</code> immediately (<code>future.value</code> / <code>future.value(timeout:)</code> blocks later; raises <code>DelegationFuture::DelegationTimeout</code> on expiry).</p>
 <h3 id="shared-memory">Shared Memory<a class="headerlink" href="#shared-memory" title="Permanent link">&para;</a></h3>
 <h4 id="rememberkey-value-value"><code>remember(key, value) → value</code><a class="headerlink" href="#rememberkey-value-value" title="Permanent link">&para;</a></h4>
-<p>Writes to the active memory (network shared memory when attached, else this peer's own).</p>
+<p>Writes to the active memory (network shared memory when attached, else this peer's own). The write is attributed to this peer: the memory's <code>current_writer</code> is set to the peer's name around the write and restored afterward.</p>
 <h4 id="recallkey-wait-false-object-nil"><code>recall(key, wait: false) → Object, nil</code><a class="headerlink" href="#recallkey-wait-false-object-nil" title="Permanent link">&para;</a></h4>
-<p>Reads from the active memory. <code>wait:</code> may be <code>false</code>, <code>true</code> (block indefinitely), or a <code>Numeric</code> numbers of seconds.</p>
+<p>Reads from the active memory. <code>wait:</code> may be <code>false</code>, <code>true</code> (block indefinitely), or a <code>Numeric</code> number of seconds — when that expires before the key is written, <code>RobotLab::AwaitTimeout</code> is raised (it does not return <code>nil</code>).</p>
 <h4 id="attach_memorymem-self"><code>attach_memory(mem) → self</code><a class="headerlink" href="#attach_memorymem-self" title="Permanent link">&para;</a></h4>
 <p>Points <code>remember</code>/<code>recall</code> at <code>mem</code> — a network run does this automatically when it starts.</p>
 <h4 id="detach_memory-self"><code>detach_memory → self</code><a class="headerlink" href="#detach_memory-self" title="Permanent link">&para;</a></h4>
@@ -2357,12 +2380,16 @@
 <h4 id="inbox-arrayrobotmessage"><code>inbox → Array&lt;RobotMessage&gt;</code><a class="headerlink" href="#inbox-arrayrobotmessage" title="Permanent link">&para;</a></h4>
 <p>Inbound bus messages received so far, oldest first (a defensive copy).</p>
 <h4 id="to_h-hash"><code>to_h → Hash</code><a class="headerlink" href="#to_h-hash" title="Permanent link">&para;</a></h4>
-<p><code>{name:, kind: :cyborg, bus: true|nil, channel: "Channel::ClassName"}.compact</code></p>
+<p><code>{name:, kind: :cyborg, bus: true|nil, channel: channel.class.name}.compact</code> — <code>channel</code> is the full class name, e.g. <code>"RobotLab::Cyborg::Channel::Terminal"</code>; <code>bus</code> is omitted when there is none.</p>
 <h3 id="bus-methods-via-robotlabrobotbusmessaging">Bus Methods (via <code>RobotLab::Robot::BusMessaging</code>)<a class="headerlink" href="#bus-methods-via-robotlabrobotbusmessaging" title="Permanent link">&para;</a></h3>
-<p><code>Cyborg</code> includes <code>RobotLab::Robot::BusMessaging</code> verbatim, gaining <code>send_message</code>, <code>send_reply</code>, <code>spawn</code>, <code>with_bus</code>, and <code>assign_bus_poller</code>. <strong>Do not call <code>on_message</code>, <code>respond_to_tasks</code>, or <code>serve</code> on a <code>Cyborg</code></strong> — all three replace the inbound message handler wholesale, which disables the built-in ask/auto-reply flow. See <a href="../how_it_works/#network-member-and-bus-contracts">How It Works</a>.</p>
+<p><code>Cyborg</code> includes <code>RobotLab::Robot::BusMessaging</code> verbatim, gaining <code>send_message</code>, <code>send_reply</code>, <code>spawn</code>, <code>with_bus</code>, and <code>assign_bus_poller</code>.</p>
+<p><code>spawn(name: "robot", system_prompt: nil, template: nil, local_tools: [], **) → Robot</code> builds a new <code>Robot</code> on this peer's bus (creating a bus first if the peer has none). A <code>Robot</code> hands its own model and provider to the robots it spawns; a <code>Cyborg</code> has neither, so <code>Cyborg#inherited_llm_settings</code> returns <code>{}</code> and the spawned robot runs on whatever you pass through (<code>model:</code>, <code>provider:</code>, or any other <code>RobotLab.build</code> option) or, failing that, on RobotLab's configured defaults:</p>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">helper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dewayne</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span><span class="w"> </span><span class="s2">"helper"</span><span class="p">,</span><span class="w"> </span><span class="ss">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="s2">"Be brief."</span><span class="p">,</span><span class="w"> </span><span class="ss">model</span><span class="p">:</span><span class="w"> </span><span class="s2">"gpt-4o-mini"</span><span class="p">,</span><span class="w"> </span><span class="ss">provider</span><span class="p">:</span><span class="w"> </span><span class="s2">"openai"</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Do not call <code>on_message</code>, <code>respond_to_tasks</code>, or <code>serve</code> on a <code>Cyborg</code></strong> — all three replace the inbound message handler wholesale, which disables the built-in ask/auto-reply flow. See <a href="../how_it_works/#network-member-and-bus-contracts">How It Works</a>.</p>
 <h3 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h3>
 <h4 id="cyborgerror"><code>Cyborg::Error</code><a class="headerlink" href="#cyborgerror" title="Permanent link">&para;</a></h4>
-<p>Raised for <code>Cyborg</code>-specific misuse. Not currently raised by any code path in this gem's own methods — reserved for future use and for extensions built on top of <code>Cyborg</code>.</p>
+<p>Raised for <code>Cyborg</code>-specific misuse (<code>class Error &lt; StandardError</code>). Not currently raised by any code path in this gem's own methods — reserved for future use and for extensions built on top of <code>Cyborg</code>. Bus misuse (e.g. <code>assign</code>/<code>send_message</code> with no bus) raises core's <code>RobotLab::BusError</code> instead.</p>
 <hr />
 <h2 id="robotlabcyborgchannel"><code>RobotLab::Cyborg::Channel</code><a class="headerlink" href="#robotlabcyborgchannel" title="Permanent link">&para;</a></h2>
 <p>The abstract base class for the <em>means</em> of reaching a human. Subclass and implement <code>#deliver</code>/<code>#receive</code> to bridge to a new transport — see <a href="../custom_channels/">Building Custom Channels</a>.</p>
@@ -2401,19 +2428,20 @@
 <p><code>Terminal.new(input: $stdin, output: $stdout, name: "cyborg")</code> — the human at a keyboard; the default channel when none is injected. <code>deliver</code> prints <code>[sender] content</code>, followed by <code>&gt;</code> for questions. <code>receive(timeout:)</code> honors the timeout via <code>IO#wait_readable</code> on a real IO (a <code>StringIO</code> in tests responds immediately). <code>correlates?</code> is <code>false</code>.</p>
 <h3 id="channelscripted"><code>Channel::Scripted</code><a class="headerlink" href="#channelscripted" title="Permanent link">&para;</a></h3>
 <p><code>Scripted.new(answers = [])</code> — canned answers consumed in order; <code>correlates?</code> is <code>true</code>. <code>#asked</code> (<code>Array&lt;String&gt;</code>) records every question shown, in order — useful for asserting what the human saw in tests.</p>
-<div class="language-ruby highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">scripted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">RobotLab</span><span class="o">::</span><span class="no">Cyborg</span><span class="o">::</span><span class="no">Channel</span><span class="o">::</span><span class="no">Scripted</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s2">"yes"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ship it"</span><span class="o">]</span><span class="p">)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">bot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">RobotLab</span><span class="o">::</span><span class="no">Cyborg</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span><span class="w"> </span><span class="s2">"dewayne"</span><span class="p">,</span><span class="w"> </span><span class="ss">channel</span><span class="p">:</span><span class="w"> </span><span class="n">scripted</span><span class="p">)</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># ... run something that asks two questions ...</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">scripted</span><span class="o">.</span><span class="n">asked</span><span class="w">   </span><span class="c1"># =&gt; ["first question text", "second question text"]</span>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">scripted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">RobotLab</span><span class="o">::</span><span class="no">Cyborg</span><span class="o">::</span><span class="no">Channel</span><span class="o">::</span><span class="no">Scripted</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s2">"yes"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ship it"</span><span class="o">]</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">bot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">RobotLab</span><span class="o">::</span><span class="no">Cyborg</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span><span class="w"> </span><span class="s2">"dewayne"</span><span class="p">,</span><span class="w"> </span><span class="ss">channel</span><span class="p">:</span><span class="w"> </span><span class="n">scripted</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># ... run something that asks two questions ...</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">scripted</span><span class="o">.</span><span class="n">asked</span><span class="w">   </span><span class="c1"># =&gt; ["first question text", "second question text"]</span>
 </span></code></pre></div>
 <hr />
 <h2 id="robotlabcyborgchannelmessage"><code>RobotLab::Cyborg::ChannelMessage</code><a class="headerlink" href="#robotlabcyborgchannelmessage" title="Permanent link">&para;</a></h2>
-<div class="language-ruby highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="no">ChannelMessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Data</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="ss">:id</span><span class="p">,</span><span class="w"> </span><span class="ss">:content</span><span class="p">,</span><span class="w"> </span><span class="ss">:in_reply_to</span><span class="p">,</span><span class="w"> </span><span class="ss">:sender</span><span class="p">,</span><span class="w"> </span><span class="ss">:kind</span><span class="p">,</span><span class="w"> </span><span class="ss">:at</span><span class="p">)</span>
+<div class="language-ruby highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="no">ChannelMessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Data</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="ss">:id</span><span class="p">,</span><span class="w"> </span><span class="ss">:content</span><span class="p">,</span><span class="w"> </span><span class="ss">:in_reply_to</span><span class="p">,</span><span class="w"> </span><span class="ss">:sender</span><span class="p">,</span><span class="w"> </span><span class="ss">:kind</span><span class="p">,</span><span class="w"> </span><span class="ss">:at</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Constructed as <code>ChannelMessage.new(content:, id: nil, in_reply_to: nil, sender: nil, kind: :message, at: nil)</code> — <code>at</code> defaults to <code>Time.now</code>. <code>#question?</code> returns <code>true</code> when <code>kind == :question</code>.</p>
 <hr />
 <h2 id="robotlabcyborginterviewer"><code>RobotLab::Cyborg::Interviewer</code><a class="headerlink" href="#robotlabcyborginterviewer" title="Permanent link">&para;</a></h2>
 <p>The process that conducts a human interaction over an injected <code>Channel</code>. See <a href="../how_it_works/#asking-asynchronously">How It Works</a> for the full asking/correlation/timeout model.</p>
+<p><code>Interviewer::POLL_INTERVAL</code> (<code>0.05</code>) is how often, in seconds, the background consumer polls the channel.</p>
 <h4 id="newchannel-default_timeout-nil"><code>new(channel:, default_timeout: nil)</code><a class="headerlink" href="#newchannel-default_timeout-nil" title="Permanent link">&para;</a></h4>
 <h4 id="askcontent-choices-nil-default-nil-question"><code>ask(content, choices: nil, default: nil) → Question</code><a class="headerlink" href="#askcontent-choices-nil-default-nil-question" title="Permanent link">&para;</a></h4>
 <p>Delivers the question (immediately on a correlating channel, or queued behind a serialized one) and returns a pending <code>Question</code> without blocking.</p>
@@ -2463,6 +2491,8 @@
 </tr>
 </tbody>
 </table>
+<h4 id="newid-content-choices-nil-default-nil-interviewer-nil"><code>new(id:, content:, choices: nil, default: nil, interviewer: nil)</code><a class="headerlink" href="#newid-content-choices-nil-default-nil-interviewer-nil" title="Permanent link">&para;</a></h4>
+<p>Built by <code>Interviewer#ask</code> — not normally constructed directly.</p>
 <h4 id="answertimeout-nil-string-nil"><code>answer(timeout: nil) → String, nil</code><a class="headerlink" href="#answertimeout-nil-string-nil" title="Permanent link">&para;</a></h4>
 <p>Blocks up to <code>timeout</code> seconds for the human's (already-interpreted) answer. On timeout, expires the question via its <code>Interviewer</code> and returns <code>default</code> (<code>nil</code> if none).</p>
 <h4 id="resolveanswer-void"><code>resolve(answer) → void</code><a class="headerlink" href="#resolveanswer-void" title="Permanent link">&para;</a></h4>
@@ -2470,6 +2500,7 @@
 <hr />
 <h2 id="robotlabcyborgconversation"><code>RobotLab::Cyborg::Conversation</code><a class="headerlink" href="#robotlabcyborgconversation" title="Permanent link">&para;</a></h2>
 <p>Turns a listening <code>Cyborg</code> into a multi-peer, <code>@mention</code>-addressed chat participant. See <a href="../how_it_works/#conversation-multi-peer-chat-by-mention">How It Works</a>.</p>
+<p><code>Conversation::MENTION</code> (<code>/@(\w+)/</code>) is the pattern that finds every <code>@name</code> in a line.</p>
 <h4 id="newcyborg-peers"><code>new(cyborg:, peers: [])</code><a class="headerlink" href="#newcyborg-peers" title="Permanent link">&para;</a></h4>
 <h4 id="peers-arraystring"><code>peers → Array&lt;String&gt;</code><a class="headerlink" href="#peers-arraystring" title="Permanent link">&para;</a></h4>
 <p>The addressable roster.</p>
@@ -2506,7 +2537,7 @@
 </tr>
 <tr>
 <td><code>RobotLab::Memory</code></td>
-<td><code>remember</code>/<code>recall</code>'s backing store; <code>#current_writer=</code> is what <code>with_writer</code> toggles around a memory write</td>
+<td><code>remember</code>/<code>recall</code>'s backing store; <code>#current_writer=</code> is what <code>#remember</code> sets around a write, and <code>#run</code> sets while the human is being asked (both via the private <code>with_writer</code>)</td>
 </tr>
 <tr>
 <td><code>RobotLab::RobotMessage</code></td>

@@ -775,16 +775,16 @@
 </tr>
 <tr>
 <td><strong>Dependency</strong></td>
-<td><code>robot_lab ~&gt; 0.2, &gt;= 0.2.6</code></td>
+<td><code>robot_lab ~&gt; 0.6</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="why-a-cyborg-not-just-a-human-shaped-robot">Why a Cyborg, Not Just a Human-Shaped Robot?<a class="headerlink" href="#why-a-cyborg-not-just-a-human-shaped-robot" title="Permanent link">&para;</a></h2>
 <p>A <code>Robot</code> is built around an LLM chat: model, provider, tokens, a <code>ruby_llm</code> chat object. None of that applies to a human. Rather than force a human through <code>Robot</code>'s LLM-shaped constructor and stub out everything that doesn't apply, <code>Cyborg</code> is a separate, smaller class that:</p>
 <ul>
-<li>Includes only the one piece of <code>Robot</code> it genuinely needs and shares byte-for-byte — <code>BusMessaging</code> (send/receive over <code>TypedBus</code>, spawn, bus poller wiring).</li>
+<li>Includes only the one piece of <code>Robot</code> it genuinely needs and shares byte-for-byte — <code>BusMessaging</code> (send/receive over <code>TypedBus</code>, spawn, bus poller wiring). <code>spawn</code> builds a <code>Robot</code> on the Cyborg's bus; since a human has no model or provider for it to inherit, pass <code>model:</code>/<code>provider:</code> to <code>spawn</code> or the new robot uses RobotLab's configured defaults.</li>
 <li>Replaces "call the model" with "ask a human," via an injectable <code>Channel</code> + <code>Interviewer</code> pair instead of a <code>ruby_llm</code> chat.</li>
-<li>Still satisfies the same <em>network member</em> contract (<code>call</code>/<code>run</code>) so it is a drop-in peer anywhere a <code>Robot</code> is expected — a pipeline <code>task</code>, a <code>delegate</code> target, a <code>spawn</code>-style bus peer.</li>
+<li>Still satisfies the same <em>network member</em> contract (<code>call</code>/<code>run</code>) so it is a drop-in peer anywhere a <code>Robot</code> is expected — a pipeline <code>task</code>, a <code>delegate</code> target, a bus peer.</li>
 </ul>
 <h2 id="links">Links<a class="headerlink" href="#links" title="Permanent link">&para;</a></h2>
 <ul>

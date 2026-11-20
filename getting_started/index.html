@@ -847,8 +847,8 @@
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Ruby 4.0.9+ (per the gemspec's <code>required_ruby_version</code>)</li>
-<li><code>robot_lab</code> <code>~&gt; 0.2</code>, <code>&gt;= 0.2.6</code> — <code>robot_lab-cyborg</code> needs the <code>respond_to_tasks</code>/<code>serve</code> and shared bus-mutex additions to <code>RobotLab::Robot::BusMessaging</code> that landed at that version, and <code>RobotLab::Memory#current_writer=</code>.</li>
-<li><code>robot_lab</code> must be <code>require</code>d before <code>robot_lab/cyborg</code> (<code>Cyborg</code> includes <code>RobotLab::Robot::BusMessaging</code> and calls <code>RobotLab.register_extension</code>, both of which must already be defined).</li>
+<li><code>robot_lab</code> <code>~&gt; 0.6</code> (per the gemspec) — <code>robot_lab-cyborg</code> needs the <code>respond_to_tasks</code>/<code>serve</code> and shared bus-mutex additions to <code>RobotLab::Robot::BusMessaging</code>, and <code>RobotLab::Memory#current_writer=</code>.</li>
+<li><code>require "robot_lab/cyborg"</code> loads <code>robot_lab</code> itself first (<code>Cyborg</code> includes <code>RobotLab::Robot::BusMessaging</code> and calls <code>RobotLab.register_extension</code>, both of which must already be defined), so the explicit <code>require "robot_lab"</code> in the snippets below is optional.</li>
 </ul>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>Add to your <code>Gemfile</code>:</p>
@@ -943,7 +943,7 @@
 <p><code>send_message</code>/<code>send_reply</code>/<code>on_message</code> all come from <code>RobotLab::Robot::BusMessaging</code>, which <code>Cyborg</code> includes — see <a href="../how_it_works/#network-member-and-bus-contracts">How It Works</a> for the one important caveat about overriding <code>on_message</code> on a <code>Cyborg</code>.</p>
 <h2 id="shared-memory">Shared Memory<a class="headerlink" href="#shared-memory" title="Permanent link">&para;</a></h2>
 <div class="language-ruby highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">dewayne</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="ss">:decision</span><span class="p">,</span><span class="w"> </span><span class="s2">"ship it"</span><span class="p">)</span><span class="w">   </span><span class="c1"># visible to every member</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">dewayne</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="ss">:sentiment</span><span class="p">,</span><span class="w"> </span><span class="ss">wait</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">)</span><span class="w">     </span><span class="c1"># block until a robot writes it</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">dewayne</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="ss">:sentiment</span><span class="p">,</span><span class="w"> </span><span class="ss">wait</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">)</span><span class="w">     </span><span class="c1"># block up to 30s until a robot writes it (then RobotLab::AwaitTimeout)</span>
 </span></code></pre></div>
 <p>Inside a network run, <code>remember</code>/<code>recall</code> target the network's shared memory automatically (<code>attach_memory</code> is called for you); outside a network, they fall back to the peer's own standalone <code>memory:</code>.</p>
 <h2 id="a-minimal-key-free-example">A Minimal, Key-Free Example<a class="headerlink" href="#a-minimal-key-free-example" title="Permanent link">&para;</a></h2>
@@ -983,7 +983,7 @@
 </tr>
 <tr>
 <td><code>02_terminal_mentions.rb</code></td>
-<td>Live <code>@mention</code> addressing via <code>Conversation</code>, a real Ollama robot cooperating via <code>#serve</code></td>
+<td>Live <code>@mention</code> addressing via <code>Conversation</code>, a real LM Studio robot (<code>:lms</code> provider) cooperating via <code>#serve</code></td>
 <td>Yes</td>
 <td>Optional (canned peers work without it)</td>
 </tr>
@@ -991,7 +991,7 @@
 <td><code>03_robot_interviews_cyborg.rb</code></td>
 <td>The interview run the <em>other</em> way — an LLM robot interviews the human via <code>delegate</code>, typed intake (<code>ask_confirm</code>/<code>ask_int</code>)</td>
 <td>Yes</td>
-<td>Yes (Ollama)</td>
+<td>Yes (LM Studio)</td>
 </tr>
 <tr>
 <td><code>04_presence_and_availability.rb</code></td>
@@ -1011,9 +1011,9 @@
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>ruby<span class="w"> </span>examples/04_presence_and_availability.rb
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>ruby<span class="w"> </span>examples/05_listening_and_duplex.rb
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Examples 2 and 3 use a real robot on Ollama (ollama pull qwen3.6; override with</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># OLLAMA_MODEL / OLLAMA_API_BASE). In example 2 the canned peers still work</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># without it — only @assistant needs Ollama.</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Examples 2 and 3 use a real robot on LM Studio (lms server start &amp;&amp;</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># lms get openai/gpt-oss-20b; override with LMS_MODEL / LMS_API_BASE). In</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># example 2 the canned peers still work without it — only @assistant needs it.</span>
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>ruby<span class="w"> </span>examples/02_terminal_mentions.rb<span class="w">        </span><span class="c1"># then type: @analyst and @scribe: status?</span>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>ruby<span class="w"> </span>examples/03_robot_interviews_cyborg.rb<span class="w">  </span><span class="c1"># the robot asks you the questions</span>
 </span></code></pre></div>
@@ -1025,7 +1025,7 @@
 </span></code></pre></div>
 <h2 id="key-constraints">Key Constraints<a class="headerlink" href="#key-constraints" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>robot_lab</code> must be <code>require</code>d before <code>robot_lab/cyborg</code> — see Prerequisites above.</li>
+<li><code>robot_lab/cyborg</code> requires <code>robot_lab</code> itself — see Prerequisites above.</li>
 <li><code>$stdin</code>/<code>$stdout</code> are only ever touched inside <code>Channel::Terminal</code>; every other part of the gem is transport-agnostic.</li>
 <li>A human step holds a thread while it waits for an answer (<code>ask</code>/<code>ask_and_wait</code> block the calling thread; <code>ask_async</code> does not — see <a href="../how_it_works/#asking-asynchronously">How It Works</a>). There is currently no way to persist a pending question across a process restart — see the <a href="../how_it_works/#roadmap-durable-human-steps">Durable Human Steps</a> roadmap note.</li>
 <li>Calling <code>on_message</code>, <code>respond_to_tasks</code>, or <code>serve</code> (all inherited from <code>BusMessaging</code>) on a <code>Cyborg</code> replaces its built-in inbound-task handling — see <a href="../how_it_works/#network-member-and-bus-contracts">How It Works</a>.</li>

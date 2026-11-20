@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Ruby 3.2+ (per the gemspec's `required_ruby_version`)
+- Ruby 4.0.9+ (per the gemspec's `required_ruby_version`)
 - `robot_lab` `~> 0.2`, `>= 0.2.6` — `robot_lab-cyborg` needs the `respond_to_tasks`/`serve` and shared bus-mutex additions to `RobotLab::Robot::BusMessaging` that landed at that version, and `RobotLab::Memory#current_writer=`.
 - `robot_lab` must be `require`d before `robot_lab/cyborg` (`Cyborg` includes `RobotLab::Robot::BusMessaging` and calls `RobotLab.register_extension`, both of which must already be defined).
 
